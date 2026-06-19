@@ -1,11 +1,15 @@
 description = "Create a session checkpoint — summarize state and prepare for /compact or new session"
 
 prompt = """
-Create a checkpoint for session continuity.
+Create a checkpoint for session continuity. You MUST create a file at the end.
 
-## Step 1: Summarize Current State
+## Step 1: Create Directory
 
-Write a brief summary:
+First, run: `mkdir -p .handoff`
+
+## Step 2: Summarize Current State
+
+Prepare this content:
 
 ```markdown
 # Session Checkpoint
@@ -48,13 +52,16 @@ Write a brief summary:
 - Modify files not related to the current task
 ```
 
-## Step 2: Save Checkpoint
+## Step 3: Save Checkpoint (REQUIRED)
 
-Save to `.handoff/checkpoint-[date].md` in the project root.
+Use the Write tool to create the file `.handoff/checkpoint-YYYY-MM-DD.md` with the content above.
+Replace YYYY-MM-DD with today's date.
 
-## Step 3: Recommend Action
+THIS IS MANDATORY - you must actually create this file, not just show the content.
 
-Tell the user:
+## Step 4: Confirm to User
+
+After creating the file, tell the user:
 
 ```
 ✓ Checkpoint saved to .handoff/checkpoint-[date].md
