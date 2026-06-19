@@ -22,12 +22,12 @@ if [ -f "$TRANSCRIPT" ]; then
   
   if [ -n "$LAST_COMPACT" ]; then
     # Count turns AFTER compaction
-    # Try Claude Code format first ("display"), fall back to generic ("role":"user")
-    TURNS=$(tail -n +"$LAST_COMPACT" "$TRANSCRIPT" | grep -c '"display"' 2>/dev/null || tail -n +"$LAST_COMPACT" "$TRANSCRIPT" | grep -c '"role":"user"' 2>/dev/null || echo "0")
+    # Try session format first ("type":"user"), fall back to history format ("display")
+    TURNS=$(tail -n +"$LAST_COMPACT" "$TRANSCRIPT" | grep -c '"type":"user"' 2>/dev/null || tail -n +"$LAST_COMPACT" "$TRANSCRIPT" | grep -c '"display"' 2>/dev/null || echo "0")
   else
     # No compaction yet - count all turns
-    # Try Claude Code format first ("display"), fall back to generic ("role":"user")
-    TURNS=$(grep -c '"display"' "$TRANSCRIPT" 2>/dev/null || grep -c '"role":"user"' "$TRANSCRIPT" 2>/dev/null || echo "0")
+    # Try session format first ("type":"user"), fall back to history format ("display")
+    TURNS=$(grep -c '"type":"user"' "$TRANSCRIPT" 2>/dev/null || grep -c '"display"' "$TRANSCRIPT" 2>/dev/null || echo "0")
   fi
 else
   TURNS=0
