@@ -1,27 +1,16 @@
 description = "Create a session checkpoint — summarize state and prepare for /compact or new session"
 
 prompt = """
-Create a checkpoint for session continuity. You MUST create a file at the end.
+Create a checkpoint for session continuity.
 
-## Step 1: Get Current Directory
+## Step 1: Summarize Current State
 
-First, run: `pwd` to capture the working directory. Store this path — you'll use it in Steps 2 and 4.
-
-## Step 2: Create Directory
-
-Run: `mkdir -p [FULL_PATH_FROM_STEP_1]/.handoff`
-
-Example: If pwd returned `/Users/me/src/myproject`, run `mkdir -p /Users/me/src/myproject/.handoff`
-
-## Step 3: Summarize Current State
-
-Prepare this content (fill in the [bracketed] sections):
+Write a brief summary:
 
 ```markdown
 # Session Checkpoint
 
 **Created**: [timestamp]
-**Working Directory**: [full path from pwd]
 **Turns**: ~[estimate]
 
 ## Current Task
@@ -46,43 +35,26 @@ Prepare this content (fill in the [bracketed] sections):
 
 **To continue this work:**
 
-1. First, change to the working directory: `cd [full path]`
-2. Read this checkpoint file completely
-3. Run the verification command below to confirm state
-4. Continue from "Next Step" above
+1. Read this checkpoint file completely
+2. Run the verification command below to confirm state
+3. Continue from "Next Step" above
 
 **Verification command:**
-```bash
-cd [full path] && git status
-```
+[e.g., git status, npm test, or other relevant command]
 
 **Do NOT:**
 - Re-debate decisions listed above
 - Start over from scratch
 - Modify files not related to the current task
-- Work in a different directory
 ```
 
-## Step 4: Save Checkpoint (REQUIRED - USE BASH)
+## Step 2: Save Checkpoint
 
-Create the file using bash cat command:
+Save to `.handoff/checkpoint-[date].md` in the project root.
 
-```bash
-cat > "[FULL_PATH_FROM_STEP_1]/.handoff/checkpoint-YYYY-MM-DD.md" << 'EOF'
-[PASTE THE MARKDOWN CONTENT HERE]
-EOF
-```
+## Step 3: Recommend Action
 
-Replace:
-- `[FULL_PATH_FROM_STEP_1]` with the actual path from pwd
-- `YYYY-MM-DD` with today's date
-- `[PASTE THE MARKDOWN CONTENT HERE]` with the checkpoint content from Step 3
-
-RUN THIS COMMAND. Do not just display it. Actually execute it in Bash.
-
-## Step 5: Confirm to User
-
-After creating the file, tell the user:
+Tell the user:
 
 ```
 ✓ Checkpoint saved to .handoff/checkpoint-[date].md
