@@ -4,8 +4,9 @@
 set -e
 
 DIR=$(pwd)
-DATE=$(date +%Y-%m-%d)
+TIMESTAMP=$(date +%Y-%m-%d-%H%M)
 TIME=$(date +%H:%M)
+DATE=$(date +%Y-%m-%d)
 BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 
 mkdir -p "$DIR/.handoff"
@@ -13,7 +14,7 @@ mkdir -p "$DIR/.handoff"
 GIT_STATUS=$(git status --short 2>/dev/null || echo "Not a git repo")
 RECENT_COMMITS=$(git log --oneline -5 2>/dev/null || echo "No commits")
 
-CHECKPOINT_FILE="$DIR/.handoff/checkpoint-$DATE.md"
+CHECKPOINT_FILE="$DIR/.handoff/checkpoint-$TIMESTAMP.md"
 
 cat > "$CHECKPOINT_FILE" << EOF
 # Session Checkpoint
