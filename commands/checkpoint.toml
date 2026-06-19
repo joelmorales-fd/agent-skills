@@ -63,16 +63,22 @@ cd [full path] && git status
 - Work in a different directory
 ```
 
-## Step 4: Save Checkpoint (REQUIRED)
+## Step 4: Save Checkpoint (REQUIRED - USE BASH)
 
-Use the Write tool to create the file at the FULL PATH:
-`[FULL_PATH_FROM_STEP_1]/.handoff/checkpoint-YYYY-MM-DD.md`
+Create the file using bash cat command:
 
-Example: `/Users/me/src/myproject/.handoff/checkpoint-2026-06-18.md`
+```bash
+cat > "[FULL_PATH_FROM_STEP_1]/.handoff/checkpoint-YYYY-MM-DD.md" << 'EOF'
+[PASTE THE MARKDOWN CONTENT HERE]
+EOF
+```
 
-Replace YYYY-MM-DD with today's date.
+Replace:
+- `[FULL_PATH_FROM_STEP_1]` with the actual path from pwd
+- `YYYY-MM-DD` with today's date
+- `[PASTE THE MARKDOWN CONTENT HERE]` with the checkpoint content from Step 3
 
-THIS IS MANDATORY - you must actually create this file using the FULL ABSOLUTE PATH, not a relative path.
+RUN THIS COMMAND. Do not just display it. Actually execute it in Bash.
 
 ## Step 5: Confirm to User
 
