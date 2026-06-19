@@ -5,11 +5,13 @@ Create a checkpoint for session continuity. You MUST create a file at the end.
 
 ## Step 1: Get Current Directory
 
-First, run: `pwd` to capture the working directory.
+First, run: `pwd` to capture the working directory. Store this path — you'll use it in Steps 2 and 4.
 
 ## Step 2: Create Directory
 
-Run: `mkdir -p .handoff`
+Run: `mkdir -p [FULL_PATH_FROM_STEP_1]/.handoff`
+
+Example: If pwd returned `/Users/me/src/myproject`, run `mkdir -p /Users/me/src/myproject/.handoff`
 
 ## Step 3: Summarize Current State
 
@@ -63,10 +65,14 @@ cd [full path] && git status
 
 ## Step 4: Save Checkpoint (REQUIRED)
 
-Use the Write tool to create the file `.handoff/checkpoint-YYYY-MM-DD.md` with the content above.
+Use the Write tool to create the file at the FULL PATH:
+`[FULL_PATH_FROM_STEP_1]/.handoff/checkpoint-YYYY-MM-DD.md`
+
+Example: `/Users/me/src/myproject/.handoff/checkpoint-2026-06-18.md`
+
 Replace YYYY-MM-DD with today's date.
 
-THIS IS MANDATORY - you must actually create this file, not just show the content.
+THIS IS MANDATORY - you must actually create this file using the FULL ABSOLUTE PATH, not a relative path.
 
 ## Step 5: Confirm to User
 
