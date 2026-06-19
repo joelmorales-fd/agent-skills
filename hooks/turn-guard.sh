@@ -17,8 +17,8 @@ fi
 
 # Count user messages (turns) since last compaction
 if [ -f "$TRANSCRIPT" ]; then
-  # Find last compaction marker (conversation-summary)
-  LAST_COMPACT=$(grep -n 'conversation-summary' "$TRANSCRIPT" 2>/dev/null | tail -1 | cut -d: -f1)
+  # Find last compaction marker (away_summary = /compact result)
+  LAST_COMPACT=$(grep -n '"subtype":"away_summary"' "$TRANSCRIPT" 2>/dev/null | tail -1 | cut -d: -f1)
   
   if [ -n "$LAST_COMPACT" ]; then
     # Count turns AFTER compaction
