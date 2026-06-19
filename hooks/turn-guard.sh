@@ -6,6 +6,14 @@ set -e
 
 INPUT=$(cat)
 TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path')
+PROJECT_DIR=$(echo "$INPUT" | jq -r '.session_id // empty' | xargs dirname 2>/dev/null || pwd)
+
+# Try to get project dir from env or fall back to pwd
+if [ -n "$CLAUDE_PROJECT_DIR" ]; then
+  PROJECT_DIR="$CLAUDE_PROJECT_DIR"
+else
+  PROJECT_DIR=$(pwd)
+fi
 
 # Count user messages (turns) since last compaction
 if [ -f "$TRANSCRIPT" ]; then
@@ -23,12 +31,51 @@ else
   TURNS=0
 fi
 
-# At 70+ turns: Strong warning (no block)
+# Auto-create checkpoint at 70+ turns
+create_checkpoint() {
+  local DIR="$PROJECT_DIR"
+  local DATE=$(date +%Y-%m-%d)
+  local TIME=$(date +%H:%M)
+  local BRANCH=$(cd "$DIR" && git branch --show-current 2>/dev/null || echo "unknown")
+  local GIT_STATUS=$(cd "$DIR" && git status --short 2>/dev/null || echo "Not a git repo")
+  local RECENT=$(cd "$DIR" && git log --oneline -5 2>/dev/null || echo "No commits")
+  
+  mkdir -p "$DIR/.handoff"
+  
+  cat > "$DIR/.handoff/checkpoint-$DATE.md" << EOF
+# Session Checkpoint (Auto-created at $TURNS turns)
+
+**Created**: $DATE $TIME
+**Working Directory**: $DIR
+**Branch**: $BRANCH
+
+## Git Status
+\`\`\`
+$GIT_STATUS
+\`\`\`
+
+## Recent Commits
+\`\`\`
+$RECENT
+\`\`\`
+
+## Current Task
+<!-- Fill in: What were you working on? -->
+
+## Next Step
+<!-- Fill in: What to do next -->
+EOF
+  
+  echo "$DIR/.handoff/checkpoint-$DATE.md"
+}
+
+# At 70+ turns: Strong warning + auto-checkpoint
 if [ "$TURNS" -ge 70 ]; then
-  jq -nc --arg turns "$TURNS" '{
+  CHECKPOINT=$(create_checkpoint)
+  jq -nc --arg turns "$TURNS" --arg cp "$CHECKPOINT" '{
     hookSpecificOutput: {
       hookEventName: "Stop",
-      additionalContext: ("🔴 CRITICAL: At " + $turns + " turns — context overflow risk is high. Run /compact soon or start fresh session.")
+      additionalContext: ("🔴 CRITICAL: At " + $turns + " turns. Auto-checkpoint saved to " + $cp + ". Run /compact or start fresh.")
     }
   }'
 
