@@ -22,10 +22,12 @@ if [ -f "$TRANSCRIPT" ]; then
   
   if [ -n "$LAST_COMPACT" ]; then
     # Count turns AFTER compaction
-    TURNS=$(tail -n +"$LAST_COMPACT" "$TRANSCRIPT" | grep -c '"role":"user"' 2>/dev/null || echo "0")
+    # Try Claude Code format first ("display"), fall back to generic ("role":"user")
+    TURNS=$(tail -n +"$LAST_COMPACT" "$TRANSCRIPT" | grep -c '"display"' 2>/dev/null || tail -n +"$LAST_COMPACT" "$TRANSCRIPT" | grep -c '"role":"user"' 2>/dev/null || echo "0")
   else
     # No compaction yet - count all turns
-    TURNS=$(grep -c '"role":"user"' "$TRANSCRIPT" 2>/dev/null || echo "0")
+    # Try Claude Code format first ("display"), fall back to generic ("role":"user")
+    TURNS=$(grep -c '"display"' "$TRANSCRIPT" 2>/dev/null || grep -c '"role":"user"' "$TRANSCRIPT" 2>/dev/null || echo "0")
   fi
 else
   TURNS=0
@@ -34,15 +36,16 @@ fi
 # Auto-create checkpoint at 70+ turns
 create_checkpoint() {
   local DIR="$PROJECT_DIR"
-  local DATE=$(date +%Y-%m-%d)
+  local TIMESTAMP=$(date +%Y-%m-%d-%H%M)
   local TIME=$(date +%H:%M)
+  local DATE=$(date +%Y-%m-%d)
   local BRANCH=$(cd "$DIR" && git branch --show-current 2>/dev/null || echo "unknown")
   local GIT_STATUS=$(cd "$DIR" && git status --short 2>/dev/null || echo "Not a git repo")
   local RECENT=$(cd "$DIR" && git log --oneline -5 2>/dev/null || echo "No commits")
   
   mkdir -p "$DIR/.handoff"
   
-  cat > "$DIR/.handoff/checkpoint-$DATE.md" << EOF
+  cat > "$DIR/.handoff/checkpoint-$TIMESTAMP.md" << EOF
 # Session Checkpoint (Auto-created at $TURNS turns)
 
 **Created**: $DATE $TIME
@@ -66,7 +69,7 @@ $RECENT
 <!-- Fill in: What to do next -->
 EOF
   
-  echo "$DIR/.handoff/checkpoint-$DATE.md"
+  echo "$DIR/.handoff/checkpoint-$TIMESTAMP.md"
 }
 
 # At 70+ turns: Strong warning + auto-checkpoint
