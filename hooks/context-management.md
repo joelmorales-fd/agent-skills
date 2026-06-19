@@ -10,9 +10,9 @@ The `turn-guard.sh` Stop hook automatically tracks turns and enforces limits:
 
 | Turns | Action |
 |-------|--------|
-| 20+ | Reminder: "Consider /compact soon" |
-| 30+ | Warning: "Run /checkpoint or /compact now" |
-| 40+ | **Blocks**: Forces checkpoint before continuing |
+| 40+ | Note: "Consider /compact soon" |
+| 50+ | Warning: "Consider running /compact" |
+| 70+ | Critical: "Run /compact soon or start fresh" |
 
 No manual tracking required — the hook reads the transcript file automatically.
 
@@ -25,7 +25,7 @@ Suggest a handoff when ANY of these conditions is true:
 | Trigger | Threshold | Detection |
 |---------|-----------|-----------|
 | Context fill | >70% | Agent notices slow responses, asks "did I mention this?" |
-| Turn count | >30 turns | Count exchanges in conversation |
+| Turn count | >50 turns | Count exchanges in conversation |
 | Session duration | >2 hours | Track elapsed time |
 | Quality degradation | Any sign | Agent forgets rules, re-asks answered questions |
 | Feature switch | Major shift | Different area of codebase, new feature entirely |

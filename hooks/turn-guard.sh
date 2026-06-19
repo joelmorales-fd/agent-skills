@@ -14,8 +14,8 @@ else
   TURNS=0
 fi
 
-# At 40+ turns: Strong warning (no block)
-if [ "$TURNS" -ge 40 ]; then
+# At 70+ turns: Strong warning (no block)
+if [ "$TURNS" -ge 70 ]; then
   jq -nc --arg turns "$TURNS" '{
     hookSpecificOutput: {
       hookEventName: "Stop",
@@ -23,8 +23,8 @@ if [ "$TURNS" -ge 40 ]; then
     }
   }'
 
-# At 30+ turns: Warning via additionalContext
-elif [ "$TURNS" -ge 30 ]; then
+# At 50+ turns: Warning via additionalContext
+elif [ "$TURNS" -ge 50 ]; then
   jq -nc --arg turns "$TURNS" '{
     hookSpecificOutput: {
       hookEventName: "Stop",
@@ -32,8 +32,8 @@ elif [ "$TURNS" -ge 30 ]; then
     }
   }'
 
-# At 20+ turns: Gentle reminder
-elif [ "$TURNS" -ge 20 ]; then
+# At 40+ turns: Gentle reminder
+elif [ "$TURNS" -ge 40 ]; then
   jq -nc --arg turns "$TURNS" '{
     hookSpecificOutput: {
       hookEventName: "Stop",
@@ -42,5 +42,5 @@ elif [ "$TURNS" -ge 20 ]; then
   }'
 fi
 
-# Under 20 turns: exit silently (no output)
+# Under 40 turns: exit silently (no output)
 exit 0

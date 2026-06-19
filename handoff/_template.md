@@ -2,7 +2,7 @@
 
 Use this template when:
 - Context window is filling up (>70%)
-- Session has been long (>30 turns or >2 hours)
+- Session has been long (>50 turns or >2 hours)
 - Switching to different feature/work
 - Ending work session for the day
 - Quality is degrading (agent forgets rules, re-asks questions)

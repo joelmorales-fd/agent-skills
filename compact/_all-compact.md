@@ -196,9 +196,9 @@ What are you doing?
 - Fresh session when switching major features.
 
 **Context Overflow Prevention**:
-- ~20 turns → Warn: Consider `/compact`
-- ~30 turns → Recommend: `/checkpoint`
-- ~40 turns → Stop: Require action
+- ~40 turns → Note: Consider `/compact`
+- ~50 turns → Warn: Consider `/compact`
+- ~70 turns → Critical: Run `/compact` soon
 
 **Memory vs Handoffs**:
 - `/memories/` — Knowledge that survives all sessions
@@ -475,7 +475,7 @@ Load this file. You now have guidance for all phases.
 ```
 
 ### When Context Gets Long
-If session >30 turns or context feels full:
+If session >50 turns or context feels full:
 1. Create a handoff document (see `handoff/_template.md`)
 2. Start fresh session with handoff
 3. Continue from where you left off

@@ -58,9 +58,9 @@ Then: Find `.handoff/checkpoint-*.md`, read it, and follow the "Resume Instructi
 ### Context Limit Protection
 
 Context overflow is handled automatically by the `hooks/turn-guard.sh` Stop hook:
-- At 20 turns: gentle reminder
-- At 30 turns: strong warning  
-- At 40 turns: blocks until `/checkpoint` or `/compact` is run
+- At 40 turns: gentle reminder
+- At 50 turns: warning  
+- At 70 turns: critical warning (run `/compact` soon)
 
 Use `/checkpoint` to save session state before starting fresh.
 

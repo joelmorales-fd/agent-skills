@@ -306,9 +306,9 @@ handoff/_example.md          # Filled-in example
 ```
 
 **Turn limits enforced automatically** by `hooks/turn-guard.sh`:
-- 20 turns: gentle reminder
-- 30 turns: strong warning
-- 40 turns: blocks until `/checkpoint` or `/compact`
+- 40 turns: gentle reminder
+- 50 turns: warning
+- 70 turns: critical warning
 
 Store handoffs in your project's `.handoff/` directory.
 

@@ -51,7 +51,7 @@ docs/         → Setup guides for different tools
 3. Check for handoff: `.handoff/*.md`
 
 ### Context Protection
-Turn limits enforced automatically by `hooks/turn-guard.sh` (20/30/40 thresholds).
+Turn limits enforced automatically by `hooks/turn-guard.sh` (40/50/70 thresholds).
 Use `/checkpoint` to save state before `/compact` or starting fresh.
 
 ### Creating Handoffs
