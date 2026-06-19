@@ -19,7 +19,7 @@ Skills encode the workflows, quality gates, and best practices that senior engin
 
 ## Commands
 
-7 slash commands that map to the development lifecycle. Each one activates the right skills automatically.
+8 slash commands that map to the development lifecycle. Each one activates the right skills automatically.
 
 | What you're doing | Command | Key principle |
 |-------------------|---------|---------------|
@@ -30,6 +30,7 @@ Skills encode the workflows, quality gates, and best practices that senior engin
 | Review before merge | `/review` | Improve code health |
 | Simplify the code | `/code-simplify` | Clarity over cleverness |
 | Ship to production | `/ship` | Faster is safer |
+| Save session state | `/checkpoint` | Prevent context overflow |
 
 Want fewer manual steps once the spec exists? **`/build auto`** generates the plan and implements every task in a single approved pass — you approve the plan once, then it runs autonomously. It removes the human stepping *between* tasks, not the verification: every task is still test-driven and committed individually, and it pauses on failures or risky steps.
 
@@ -273,12 +274,55 @@ Every skill follows a consistent anatomy:
 
 ---
 
+## Context Optimization
+
+Skills are powerful but can consume significant context. This pack includes a token optimization system:
+
+### Compact Digests
+Every skill has a `COMPACT.md` (~50 lines, ~200 tokens) alongside the full `SKILL.md` (~300 lines, ~1,200 tokens). Load the compact version for 80% token reduction.
+
+```
+# At session start - load all digests at once
+compact/_all-compact.md      # ~2,500 tokens total for all skills
+
+# Or load individual digests
+skills/<name>/COMPACT.md     # ~200 tokens per skill
+```
+
+### Loading Modes
+
+| Mode | When | What to Load |
+|------|------|--------------|
+| **Compact** (default) | Session start, normal use | `compact/_all-compact.md` |
+| **Full** | First time using skill, complex task | `skills/<name>/SKILL.md` |
+| **Minimal** | Context critical (>80%) | Reference from memory |
+
+### Session Handoffs
+Long sessions degrade as skill guidance gets buried in context. Use handoff documents for session continuity:
+
+```
+handoff/_template.md         # Template for creating handoffs
+handoff/_example.md          # Filled-in example
+```
+
+**Turn limits enforced automatically** by `hooks/turn-guard.sh`:
+- 20 turns: gentle reminder
+- 30 turns: strong warning
+- 40 turns: blocks until `/checkpoint` or `/compact`
+
+Store handoffs in your project's `.handoff/` directory.
+
+### Token Budget Target
+With compact loading, skill guidance uses <5% of context (vs 15-25% without optimization).
+
+---
+
 ## Project Structure
 
 ```
 agent-skills/
 ├── skills/                            # 24 skills (23 lifecycle + 1 meta)
-│   ├── interview-me/                  #   Define
+│   ├── interview-me/                  #   Define (each has SKILL.md + COMPACT.md)
 │   ├── idea-refine/                   #   Define
 │   ├── spec-driven-development/       #   Define
 │   ├── planning-and-task-breakdown/   #   Plan
@@ -302,9 +346,16 @@ agent-skills/
 │   ├── observability-and-instrumentation/ # Ship
 │   ├── shipping-and-launch/           #   Ship
 │   └── using-agent-skills/            #   Meta: how to use this pack
+├── compact/                           # Token-optimized loading
+│   ├── _all-compact.md                #   All skill digests combined (~2,500 tokens)
+│   └── _loader.md                     #   Loading protocol instructions
+├── handoff/                           # Session continuity
+│   ├── _template.md                   #   Handoff document template
+│   └── _example.md                    #   Filled-in example
 ├── agents/                            # 4 specialist personas
 ├── references/                        # 4 supplementary checklists
 ├── hooks/                             # Session lifecycle hooks
+│   └── context-management.md          #   Auto-handoff triggers
 ├── .claude/commands/                  # 7 slash commands (Claude Code)
 ├── .gemini/commands/                  # 7 slash commands (Gemini CLI)
 ├── commands/                          # 8 slash commands (Antigravity CLI)

@@ -117,6 +117,64 @@ Long conversations accumulate stale context. Manage this:
 - **Start fresh sessions** when switching between major features
 - **Summarize progress** when context is getting long: "So far we've completed X, Y, Z. Now working on W."
 - **Compact deliberately** — if the tool supports it, compact/summarize before critical work
+- **Use `/checkpoint`** — create handoff documents before context overflow (see Session Continuity below)
+
+## Session Continuity
+
+When context grows too large, use handoffs to preserve state across sessions.
+
+### Context Overflow Prevention
+
+| Turns | Action |
+|-------|--------|
+| ~20 | Warn: Consider `/compact` |
+| ~30 | Recommend: `/checkpoint` or `/compact` |
+| ~40 | Stop: Require action before continuing |
+
+### The Handoff Pattern
+
+When approaching context limits:
+
+1. Run `/checkpoint` to create a handoff document
+2. Save to `.handoff/checkpoint-[date].md`
+3. Either run `/compact` or start fresh session
+4. Load handoff in new session: "Load .handoff/checkpoint-[date].md and continue"
+
+**Handoff captures:**
+- Current task and progress
+- Key decisions made (and why)
+- Files modified
+- Exact next step
+- Resume instructions
+
+### Memory for Persistent Knowledge
+
+Use the memory system for knowledge that survives across ALL sessions:
+
+| Memory Scope | Use For | Path |
+|--------------|---------|------|
+| **User memory** | Personal preferences, common patterns | `/memories/` |
+| **Session memory** | Current task context, temp notes | `/memories/session/` |
+| **Repo memory** | Project conventions, build commands | `/memories/repo/` |
+
+**Good for memory:**
+- Build commands that work
+- Debugging patterns discovered
+- Project-specific gotchas
+- User preferences
+
+**Good for handoffs:**
+- Current task state
+- In-progress decisions
+- Session-specific context
+
+### When to Use Which
+
+```
+Knowledge survives sessions? → Memory (/memories/)
+Task state for next session? → Handoff (.handoff/)
+Just need less context now? → /compact
+```
 
 ## Context Packing Strategies
 

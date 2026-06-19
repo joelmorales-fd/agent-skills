@@ -1,0 +1,79 @@
+description = "Create a session checkpoint — summarize state and prepare for /compact or new session"
+
+prompt = """
+Create a checkpoint for session continuity.
+
+## Step 1: Summarize Current State
+
+Write a brief summary:
+
+```markdown
+# Session Checkpoint
+
+**Created**: [timestamp]
+**Turns**: ~[estimate]
+
+## Current Task
+[What we're working on]
+
+## Progress
+- [x] [Completed items]
+- [ ] [Remaining items]
+
+## Key Decisions Made
+1. [Decision] — [Why]
+
+## Files Modified
+- [file paths]
+
+## Next Step
+[Exact next action to take]
+
+---
+
+## Resume Instructions (For Next Session)
+
+**To continue this work:**
+
+1. Read this checkpoint file completely
+2. Run the verification command below to confirm state
+3. Continue from "Next Step" above
+
+**Verification command:**
+[e.g., git status, npm test, or other relevant command]
+
+**Do NOT:**
+- Re-debate decisions listed above
+- Start over from scratch
+- Modify files not related to the current task
+```
+
+## Step 2: Save Checkpoint
+
+Save to `.handoff/checkpoint-[date].md` in the project root.
+
+## Step 3: Recommend Action
+
+Tell the user:
+
+```
+✓ Checkpoint saved to .handoff/checkpoint-[date].md
+
+To continue in a NEW session:
+1. Start fresh session
+2. Say: "Load .handoff/checkpoint-[date].md and continue from where we left off"
+
+Or stay in this session:
+1. Run /compact to reduce context
+2. Continue working
+
+Current turn estimate: ~[N] turns
+```
+
+## When to Use
+
+- Before context gets too large (~25+ turns)
+- Before switching to a different task
+- When quality seems to be degrading
+- Before ending a work session
+"""

@@ -135,6 +135,54 @@ These are the subtle errors that look like productivity but create problems:
 
 4. **When in doubt, start with a spec.** If the task is non-trivial and there's no spec, begin with `spec-driven-development`.
 
+## Skill Loading Protocol
+
+**Always use compact-first loading to minimize token usage.**
+
+When invoking any skill:
+
+```
+Need skill X?
+    │
+    ├── Check: Does skills/X/COMPACT.md exist?
+    │   │
+    │   ├── Yes → Load COMPACT.md first (~200 tokens)
+    │   │         │
+    │   │         ├── Sufficient for task? → Use it, done
+    │   │         │
+    │   │         └── Need more detail? → Expand to SKILL.md
+    │   │
+    │   └── No → Load full SKILL.md
+    │
+    └── Continue with skill workflow
+```
+
+### When to Expand to Full SKILL.md
+
+- First time using the skill in this session
+- Complex or edge-case decisions
+- Agent made an error related to the skill
+- User asks detailed "how" questions
+
+### Session Start Optimization
+
+At session start, you can load all digests at once:
+```
+Read compact/_all-compact.md (~2,500 tokens for all skills)
+```
+
+This gives you reference to all skills without loading each full SKILL.md (~15,000+ tokens total).
+
+### Token Budget Target
+
+| Loading Mode | Tokens | When |
+|--------------|--------|------|
+| All compact digests | ~2,500 | Session start |
+| Single COMPACT.md | ~200 | Specific skill needed |
+| Full SKILL.md | ~1,200 | Complex decisions |
+
+Target: <5% of context for skill guidance (vs 15-25% without optimization).
+
 ## Lifecycle Sequence
 
 For a complete feature, the typical skill sequence is:

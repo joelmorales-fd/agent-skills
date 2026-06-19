@@ -9,6 +9,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "SCRIPT=\"${CLAUDE_PLUGIN_ROOT}/hooks/turn-guard.sh\"; [ -f \"$SCRIPT\" ] && bash \"$SCRIPT\" || true",
+            "statusMessage": "Checking session turn count..."
+          }
+        ]
+      }
     ]
   }
 }

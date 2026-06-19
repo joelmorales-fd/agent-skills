@@ -13,9 +13,56 @@ OpenCode uses a **skill-driven execution model** powered by the `skill` tool and
 ### Core Rules
 
 - If a task matches a skill, you MUST invoke it
-- Skills are located in `skills/<skill-name>/SKILL.md`
+- **Use compact-first loading**: Check for `skills/<skill-name>/COMPACT.md` first (~200 tokens), expand to `SKILL.md` (~1,200 tokens) only if needed
 - Never implement directly if a skill applies
 - Always follow the skill instructions exactly (do not partially apply them)
+
+### Skill Loading Protocol
+
+**Always load COMPACT.md before SKILL.md to minimize token usage.**
+
+```
+Need skill X?
+    │
+    ├── Load skills/X/COMPACT.md first (~200 tokens)
+    │   │
+    │   ├── Sufficient? → Use it
+    │   │
+    │   └── Need more detail? → Expand to skills/X/SKILL.md
+    │
+    └── Continue with skill workflow
+```
+
+At session start, optionally load all digests: `compact/_all-compact.md` (~2,500 tokens total)
+
+### Session Start: Check for Handoffs
+
+At the start of each session, check if `.handoff/` directory exists:
+
+```
+Session starts
+    │
+    ├── User mentions "continue" or "pick up" or "resume"?
+    │   └── Yes → Look for .handoff/*.md, load most recent, follow resume instructions
+    │
+    └── No → Normal session start
+```
+
+If user says something like:
+- "Continue from checkpoint"
+- "Pick up where we left off"
+- "Load the handoff"
+
+Then: Find `.handoff/checkpoint-*.md`, read it, and follow the "Resume Instructions" section.
+
+### Context Limit Protection
+
+Context overflow is handled automatically by the `hooks/turn-guard.sh` Stop hook:
+- At 20 turns: gentle reminder
+- At 30 turns: strong warning  
+- At 40 turns: blocks until `/checkpoint` or `/compact` is run
+
+Use `/checkpoint` to save session state before starting fresh.
 
 ### Intent → Skill Mapping
 
