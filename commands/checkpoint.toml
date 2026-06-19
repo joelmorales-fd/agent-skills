@@ -3,18 +3,23 @@ description = "Create a session checkpoint — summarize state and prepare for /
 prompt = """
 Create a checkpoint for session continuity. You MUST create a file at the end.
 
-## Step 1: Create Directory
+## Step 1: Get Current Directory
 
-First, run: `mkdir -p .handoff`
+First, run: `pwd` to capture the working directory.
 
-## Step 2: Summarize Current State
+## Step 2: Create Directory
 
-Prepare this content:
+Run: `mkdir -p .handoff`
+
+## Step 3: Summarize Current State
+
+Prepare this content (fill in the [bracketed] sections):
 
 ```markdown
 # Session Checkpoint
 
 **Created**: [timestamp]
+**Working Directory**: [full path from pwd]
 **Turns**: ~[estimate]
 
 ## Current Task
@@ -39,27 +44,31 @@ Prepare this content:
 
 **To continue this work:**
 
-1. Read this checkpoint file completely
-2. Run the verification command below to confirm state
-3. Continue from "Next Step" above
+1. First, change to the working directory: `cd [full path]`
+2. Read this checkpoint file completely
+3. Run the verification command below to confirm state
+4. Continue from "Next Step" above
 
 **Verification command:**
-[e.g., git status, npm test, or other relevant command]
+```bash
+cd [full path] && git status
+```
 
 **Do NOT:**
 - Re-debate decisions listed above
 - Start over from scratch
 - Modify files not related to the current task
+- Work in a different directory
 ```
 
-## Step 3: Save Checkpoint (REQUIRED)
+## Step 4: Save Checkpoint (REQUIRED)
 
 Use the Write tool to create the file `.handoff/checkpoint-YYYY-MM-DD.md` with the content above.
 Replace YYYY-MM-DD with today's date.
 
 THIS IS MANDATORY - you must actually create this file, not just show the content.
 
-## Step 4: Confirm to User
+## Step 5: Confirm to User
 
 After creating the file, tell the user:
 
