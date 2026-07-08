@@ -620,6 +620,10 @@ Step 3 is marked `done` ONLY when:
 
 Run the following checklist against the diff. Every item must pass before Step 4 is marked `done`.
 
+**First:** Invoke the `code-review-and-quality` skill for the general six-axis review (correctness, readability, architecture, security, performance, resource leaks). This catches issues not specific to AVOD domain.
+
+**Then:** Apply this AVOD-specific checklist:
+
 ```
 AVOD Code Review Checklist
 ──────────────────────────
@@ -633,6 +637,7 @@ Redis:
 - [ ] TTL is set explicitly and intentionally — no unbounded entries
 - [ ] No stale cache entries possible after the change
 - [ ] Redis key naming follows existing conventions in the module
+- [ ] Redis client is NOT created per-request (use singleton/pooled — see resource-leak-detection skill)
 
 Tests:
 - [ ] Happy path covered
@@ -646,6 +651,7 @@ Code quality:
 - [ ] Pattern matches the closest existing Op or service in the same module
 - [ ] No accidental scope creep — only the files named in Stage 4 are changed
 - [ ] Config changes (if any) are deployed to INT before PROD
+- [ ] No resources created per-request without cleanup (connections, clients, thread pools)
 
 Harness suite status (director2-aws only):
 - [ ] Step 3 full suite is clean OR pre-existing failures are documented with confirmation

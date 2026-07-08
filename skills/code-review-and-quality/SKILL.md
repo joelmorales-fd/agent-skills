@@ -71,7 +71,7 @@ For detailed security guidance, see `security-and-hardening`. Does the change in
 
 ### 5. Performance
 
-For detailed profiling and optimization, see `performance-optimization`. Does the change introduce performance problems?
+For detailed profiling and optimization, see `performance-optimization`. For resource leak detection, see `resource-leak-detection`. Does the change introduce performance problems?
 
 - Any N+1 query patterns?
 - Any unbounded loops or unconstrained data fetching?
@@ -79,6 +79,9 @@ For detailed profiling and optimization, see `performance-optimization`. Does th
 - Any unnecessary re-renders in UI components?
 - Any missing pagination on list endpoints?
 - Any large objects created in hot paths?
+- Any clients/connections created per-request instead of pooled/singleton?
+- Any resources opened without guaranteed cleanup (try-with-resources, context managers)?
+- Any unbounded caches that could grow forever?
 
 ## Change Sizing
 

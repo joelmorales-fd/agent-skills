@@ -1,4 +1,4 @@
-description = "Conduct a five-axis code review — correctness, readability, architecture, security, performance"
+description = "Conduct a six-axis code review — correctness, readability, architecture, security, performance, resource leaks"
 
 prompt = """
 Invoke the code-review-and-quality skill.
@@ -10,6 +10,7 @@ Review the current changes (staged or recent commits) across all five axes:
 3. **Architecture** — Follows existing patterns? Clean boundaries? Right abstraction level?
 4. **Security** — Input validated? Secrets safe? Auth checked? (Use security-and-hardening skill)
 5. **Performance** — No N+1 queries? No unbounded ops? (Use performance-optimization skill)
+6. **Resource Leaks** — Clients created per-request? Missing cleanup? Unbounded caches? (Use resource-leak-detection skill)
 
 Categorize findings as Critical, Important, or Suggestion.
 Output a structured review with specific file:line references and fix recommendations.
