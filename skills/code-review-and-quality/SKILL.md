@@ -7,7 +7,7 @@ description: Conducts multi-axis code review. Use before merging any change. Use
 
 ## Overview
 
-Multi-dimensional code review with quality gates. Every change gets reviewed before merge — no exceptions. Review covers five axes: correctness, readability, architecture, security, and performance.
+Multi-dimensional code review with quality gates. Every change gets reviewed before merge — no exceptions. Review covers six axes: correctness, readability, architecture, security, performance, and resource leaks.
 
 **The approval standard:** Approve a change when it definitely improves overall code health, even if it isn't perfect. Perfect code doesn't exist — the goal is continuous improvement. Don't block a change because it isn't exactly how you would have written it. If it improves the codebase and follows the project's conventions, approve it.
 
@@ -19,7 +19,7 @@ Multi-dimensional code review with quality gates. Every change gets reviewed bef
 - When refactoring existing code
 - After any bug fix (review both the fix and the regression test)
 
-## The Five-Axis Review
+## The Six-Axis Review
 
 Every review evaluates code across these dimensions:
 
@@ -71,7 +71,7 @@ For detailed security guidance, see `security-and-hardening`. Does the change in
 
 ### 5. Performance
 
-For detailed profiling and optimization, see `performance-optimization`. For resource leak detection, see `resource-leak-detection`. Does the change introduce performance problems?
+For detailed profiling and optimization, see `performance-optimization`. Does the change introduce performance problems?
 
 - Any N+1 query patterns?
 - Any unbounded loops or unconstrained data fetching?
@@ -79,9 +79,16 @@ For detailed profiling and optimization, see `performance-optimization`. For res
 - Any unnecessary re-renders in UI components?
 - Any missing pagination on list endpoints?
 - Any large objects created in hot paths?
+
+### 6. Resource Leaks
+
+For detailed guidance, see `resource-leak-detection`. Does the change leak resources over the life of the process?
+
 - Any clients/connections created per-request instead of pooled/singleton?
 - Any resources opened without guaranteed cleanup (try-with-resources, context managers)?
 - Any unbounded caches that could grow forever?
+- Any thread pools or executors created without lifecycle management?
+- Any event listeners/subscriptions registered without a matching unregister?
 
 ## Change Sizing
 
@@ -144,7 +151,7 @@ Tests reveal intent and coverage:
 
 ### Step 3: Review the Implementation
 
-Walk through the code with the five axes in mind:
+Walk through the code with the six axes in mind:
 
 ```
 For each file changed:
