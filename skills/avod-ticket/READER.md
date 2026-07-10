@@ -449,4 +449,4 @@ All saved to your chosen directory (defaults to repo root).
 
 ---
 
-**Ready to start?** Open a Jira ticket and invoke `/avod-ticket`. The skill will take it from there.
+**Ready to start?** Open a Jira ticket and invoke `/avod`. The skill will take it from there.
