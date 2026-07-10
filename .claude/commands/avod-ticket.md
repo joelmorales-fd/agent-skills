@@ -1,5 +1,6 @@
 ---
 description: AVOD team workflow from Jira ticket to merged, tested code. Six gated stages — intake, investigation, roadmap, code guide, implement+verify, completion report. Enforces harness-first for director2-aws, Spring Boot integration tests for other repos. All AVOD domain knowledge embedded. No stage is skipped. Code is not written until Stage 3 is approved.
+allowed-tools: [Read, Write, Bash, Grep, Glob, AskUserQuestion, Skill]
 ---
 
 # AVOD Ticket to Delivery
@@ -96,27 +97,49 @@ Ask the developer: "Paste your Jira ticket (type END on a new line when done), o
 
 ### Ask the five clarifying questions
 
-Read the ticket, then ask these questions **one at a time**. Wait for each answer before asking the next.
+Read the ticket, then use the **AskUserQuestion tool** for each question to show dropdown selections.
 
-1. **Which repo owns this change?**
-   - Options: `director2-aws`, `moneyball-aws`, `fw-catalogsync-aws`, or other
-   - Why it matters: determines the test strategy, domain skills, and harness commands
+**Question 1:** Use AskUserQuestion:
+- header: "Repo"
+- question: "Which repo owns this change?"
+- options:
+  - director2-aws (Harness XML tests)
+  - moneyball-aws (Spring Boot tests)
+  - fw-catalogsync-aws (Spring Boot tests)
+  - Other (I'll specify)
 
-2. **What kind of change is this?**
-   - Options: new operation/feature, change to existing behavior, bug fix, config change
-   - Why it matters: determines the investigation scope and what "done" looks like
+**Question 2:** Use AskUserQuestion:
+- header: "Change type"
+- question: "What kind of change is this?"
+- options:
+  - New feature (Adding something that didn't exist)
+  - Behavior change (Intentional logic change)
+  - Bug fix (Code is broken)
+  - Config change (Configuration only)
 
-3. **What does "done" look like from the API or behavior perspective?**
-   - Push for a specific answer: "Which API endpoint returns differently? What does it return now vs. what should it return?"
-   - Why it matters: anchors the acceptance criteria for every downstream stage
+**Question 3:** Use AskUserQuestion:
+- header: "Done when"
+- question: "What does 'done' look like from the API perspective?"
+- options:
+  - Let me describe it (free text input)
 
-4. **Are there constraints?**
-   - Examples: no config change, must be backward-compatible, must not touch module X, must deploy to INT before PROD
-   - Why it matters: prevents wasted investigation and rework after implementation
+**Question 4:** Use AskUserQuestion:
+- header: "Constraints"
+- question: "Are there constraints I should know about?"
+- multiSelect: true
+- options:
+  - Must be backward-compatible
+  - No config changes allowed
+  - Must deploy to INT before PROD
+  - Must not touch certain modules
+  - No constraints
 
-5. **Is there prior context?**
-   - Examples: prior investigation doc, a related ticket, a Slack thread, a known code location
-   - Why it matters: avoids re-doing work that has already been done
+**Question 5:** Use AskUserQuestion:
+- header: "Prior context"
+- question: "Is there prior context (related ticket, investigation doc, Slack thread)?"
+- options:
+  - Yes, I'll provide details
+  - None that I know of
 
 ### Write the scope statement
 
@@ -135,9 +158,16 @@ Prior context:[From question 5, or "None"]
 Out of scope: [Anything explicitly excluded]
 ```
 
-Ask: "Does this scope look right? (yes / no / refine)"
-- `yes` → save to `[OUTPUT_DIR]/01-scope.md`, proceed to Stage 2
-- `no` / `refine` → ask what's wrong, update, show again
+Use AskUserQuestion for confirmation:
+- header: "Scope OK?"
+- question: "Does this scope look right?"
+- options:
+  - Yes, save and proceed to Stage 2
+  - No, something's wrong
+  - Refine, show me what to change
+
+- **Yes** → save to `[OUTPUT_DIR]/01-scope.md`, proceed to Stage 2
+- **No** or **Refine** → ask what's wrong, update, show again
 
 **Gate:** Explicit yes on the scope statement. Do not read any code until this gate passes.
 
@@ -154,7 +184,14 @@ Based on the scope statement, identify the relevant files. For director2-aws thi
 - Existing helpers or patterns to reuse
 - The test file location (in `suite/<module>/test/`)
 
-Ask: "Which files should I start with? (I'll also look for related files as I read.)"
+Use AskUserQuestion:
+- header: "Start files"
+- question: "Which files should I start with? (My guess: [your guess based on ticket/repo])"
+- options:
+  - Your guess is correct, start there
+  - Let me specify different files
+
+If they choose "Let me specify", ask for the file paths as free text.
 
 Read each file the developer names. Then follow imports, references, and usages to find related files. Use Read to open and quote the actual code.
 
@@ -216,10 +253,18 @@ Use this in [location] — do not write a new implementation.
 - No sentence contains "probably", "I think", "likely", or "should be"
 - Open questions are listed explicitly, not buried in prose
 
-Ask: "Does this investigation look accurate? (yes / no / refine)"
-- `yes` → save to `[OUTPUT_DIR]/02-investigation.md`, proceed to Stage 3
-- `no` / `refine` → ask what's missing or wrong, investigate further, update
-- `back` → return to Stage 1
+Use AskUserQuestion:
+- header: "Investigation OK?"
+- question: "Does this investigation look accurate?"
+- options:
+  - Yes, save and proceed to Stage 3
+  - No, something's missing
+  - Refine, show specific issues
+  - Back, return to Stage 1
+
+- **Yes** → save to `[OUTPUT_DIR]/02-investigation.md`, proceed to Stage 3
+- **No** or **Refine** → ask what's missing or wrong, investigate further, update
+- **Back** → return to Stage 1
 
 **Gate:** Developer confirms the investigation is accurate and complete.
 
@@ -275,7 +320,14 @@ Before asking the developer to approve, verify:
 - [ ] Step 4 is always code review with the AVOD checklist
 - [ ] No step is vague ("implement the feature" — be specific about the method and file)
 
-Ask: "Does this plan look right? (yes / no / back)"
+Use AskUserQuestion:
+- header: "Plan OK?"
+- question: "Does this plan look right?"
+- options:
+  - Yes, save and proceed to Stage 4
+  - No, something's wrong
+  - Refine, show me what to change
+  - Back, return to Stage 2
 - `yes` → save to `[OUTPUT_DIR]/03-roadmap.md`, proceed to Stage 4
 - `no` → ask what's wrong, update the plan, show again
 - `back` → return to Stage 2
@@ -423,9 +475,21 @@ When the test passes (GREEN), update Step 2 in the roadmap to `done`.
 ```
 
 - If clean → update Step 3 to `done`
-- If failures → show the failures. Ask: "Are these pre-existing failures or new ones caused by your change? (pre-existing / new)"
-  - `pre-existing` → confirm by checking git blame or running on main branch, then proceed
-  - `new` → must be fixed before continuing. Stay on Step 3 until clean.
+- If failures → show the failures.
+
+Use AskUserQuestion:
+- header: "Failures"
+- question: "Are these pre-existing failures or new ones caused by your change?"
+- options:
+  - Pre-existing (Test fails on main branch too)
+  - New - fix now (Fix before continuing)
+  - New - separate ticket (File a new Jira)
+  - New - skip (Acknowledge in code review)
+
+  - **Pre-existing** → confirm by checking git blame or running on main branch, then proceed
+  - **New - fix now** → must be fixed before continuing. Stay on Step 3 until clean.
+  - **New - separate ticket** → document and proceed
+  - **New - skip** → document for code review
 
 ### Step 4: Code review — AVOD checklist
 
@@ -459,18 +523,43 @@ Code quality:
 - [ ] Config changes (if any) are deployed to INT before PROD
 ```
 
-Show the checklist. Ask: "Does the code review pass? (yes / no)"
-- `yes` → update Step 4 to `done`
-- `no` → ask which items failed, let the developer fix them, re-run the checklist
+Show the checklist.
+
+Use AskUserQuestion:
+- header: "Code review"
+- question: "Does the code review pass?"
+- options:
+  - Yes, all items pass
+  - No, some items failed
+
+- **Yes** → update Step 4 to `done`
+- **No** → ask which items failed, let the developer fix them, re-run the checklist
 
 ### Step 5: Commit and merge
 
-Ask: "Ready to commit? (yes / no)"
-- `yes` → run `git add` on the changed files, then `git commit`. Show the commit hash.
-- `no` → pause and wait
+Use AskUserQuestion:
+- header: "Commit"
+- question: "Ready to commit?"
+- options:
+  - Yes, commit now
+  - No, wait
 
-After commit, ask: "PR opened and merged? (yes / no)"
-- `yes` → ask: "Has [INT / staging] confirmed the expected behavior? (yes / no)"
+- **Yes** → run `git add` on the changed files, then `git commit`. Show the commit hash.
+- **No** → pause and wait
+
+After commit, use AskUserQuestion:
+- header: "PR status"
+- question: "PR opened and merged?"
+- options:
+  - Yes, merged
+  - No, still open
+
+- **Yes** → use AskUserQuestion:
+  - header: "INT verified"
+  - question: "Has INT/staging confirmed the expected behavior?"
+  - options:
+    - Yes, verified
+    - No, waiting
   - `yes` → update Step 5 to `done`, update Overall to `done`, proceed to Stage 6
   - `no` → wait for confirmation before closing
 
@@ -569,9 +658,15 @@ Generate the completion report in this format:
 
 Save to `[OUTPUT_DIR]/06-completion-report.md`.
 
-Ask: "Does this report look accurate? (yes / no / correct)"
-- `yes` → "✓ Ticket complete. All outputs in `[OUTPUT_DIR]/`."
-- `no` / `correct` → ask what's wrong, update, show again.
+Use AskUserQuestion:
+- header: "Report OK?"
+- question: "Does this report look accurate?"
+- options:
+  - Yes, looks good
+  - No, needs correction
+
+- **Yes** → "✓ Ticket complete. All outputs in `[OUTPUT_DIR]/`."
+- **No** → ask what's wrong, update, show again.
 
 ---
 

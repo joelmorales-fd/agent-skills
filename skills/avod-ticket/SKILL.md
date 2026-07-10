@@ -1,6 +1,7 @@
 ---
 name: avod-ticket
 description: AVOD team workflow from Jira ticket to merged, tested code. Six gated stages — intake, investigation, roadmap, code guide, implement+verify, completion report. Enforces harness-first for director2-aws, Spring Boot integration tests for other repos. All AVOD domain knowledge embedded. No stage is skipped. Code is not written until Stage 3 is approved.
+allowed-tools: AskUserQuestion, Read, Write, Bash
 ---
 
 # AVOD Ticket to Delivery
@@ -97,71 +98,62 @@ Ask the developer: "Paste your Jira ticket (type END on a new line when done), o
 
 ### Ask the five clarifying questions
 
-Read the ticket, then ask these questions **one at a time**. Wait for each answer before asking the next.
+Read the ticket, then use the **AskUserQuestion tool** to ask these questions with dropdown selections.
 
 **Question 1: Which repo owns this change?**
 
-```
-1   director2-aws
-    Harness-based testing; XML test files; buildenv builds
-    
-2   moneyball-aws
-    Spring Boot; @SpringBootTest integration tests; gradle/maven build
-    
-3   fw-catalogsync-aws
-    Spring Boot; @SpringBootTest integration tests; gradle/maven build
-    
-4   Other (specify name)
-    Tell me the repo name and I'll detect the test strategy
-
-→ Choose [1-4]:
-```
+Use AskUserQuestion tool:
+- header: "Repo"
+- question: "Which repo owns this change? (Based on ticket, I'm guessing [your guess based on content])"
+- options:
+  - director2-aws (Harness XML tests via ./run-harness-sidecar.sh)
+  - moneyball-aws (Spring Boot / @SpringBootTest via ./gradlew test)
+  - fw-catalogsync-aws (Spring Boot / @SpringBootTest via ./gradlew test)
+  - Other (I'll specify the repo and test command)
 
 **Question 2: What kind of change is this?**
 
-```
-Looking at the ticket, which best describes it?
+Use AskUserQuestion tool:
+- header: "Change type"
+- question: "What kind of change is this? (Based on ticket, I'm guessing [your guess])"
+- options:
+  - Bug fix (Code is broken, not doing what it should)
+  - Behavior change (Intentional logic change affecting existing behavior)
+  - New feature (Adding something that didn't exist before)
+  - Config change (Configuration-only, no code logic changes)
 
-1   Bug fix
-    Example: The API should return AVOD-only titles but is not
-    When: The code is broken, not doing what it should
-    
-2   Behavior change
-    Example: We're changing how the sort order works in search results
-    When: Intentional logic change that affects existing behavior
-    
-3   New operation / feature
-    Example: Adding new filtering logic for AVOD-eligible titles
-    When: Adding something that didn't exist before
-    
-4   Config change
-    Example: Adding a new environment variable for Redis TTL
-    When: Configuration-only, no code logic changes
+**Question 3: What does "done" look like?**
 
-→ Choose [1-4]:
-```
+Use AskUserQuestion tool:
+- header: "Done when"
+- question: "What does 'done' look like from the API perspective? (My guess: [your guess])"
+- options:
+  - Your guess is correct
+  - Let me describe it differently
 
-**Question 3: What does "done" look like from the API or behavior perspective?**
-
-Push for a specific answer: "Which API endpoint returns differently? What does it return now vs. what should it return?"
-
-Why it matters: anchors the acceptance criteria for every downstream stage
-
----
+If they choose "Let me describe it differently", ask a follow-up free-text question.
 
 **Question 4: Are there constraints?**
 
-Examples: no config change, must be backward-compatible, must not touch module X, must deploy to INT before PROD
-
-Why it matters: prevents wasted investigation and rework after implementation
-
----
+Use AskUserQuestion tool:
+- header: "Constraints"  
+- question: "Are there constraints I should know about?"
+- multiSelect: true
+- options:
+  - Must be backward-compatible
+  - No config changes allowed
+  - Must deploy to INT before PROD
+  - Must not touch certain modules
+  - No constraints
 
 **Question 5: Is there prior context?**
 
-Examples: prior investigation doc, a related ticket, a Slack thread, a known code location
-
-Why it matters: avoids re-doing work that has already been done
+Use AskUserQuestion tool:
+- header: "Prior context"
+- question: "Is there prior context — related ticket, investigation doc, Slack thread, or known code location?"
+- options:
+  - Yes, I'll provide details
+  - None that I know of
 
 ### Write the scope statement
 
@@ -180,26 +172,18 @@ Prior context:[From question 5, or "None"]
 Out of scope: [Anything explicitly excluded]
 ```
 
-```
-Does this scope look right?
+Then use AskUserQuestion tool for confirmation:
+- header: "Scope OK?"
+- question: "Does this scope look right?"
+- options:
+  - Yes, save and proceed to Stage 2
+  - No, something's wrong
+  - Refine, show me what to change
 
-1   Yes — save and proceed
-    Use when: Goal, done-when, and constraints are all clear
-    
-2   No — let me refine
-    Use when: Something is wrong or missing
-    
-3   Refine — show me what to change
-    Use when: Mostly right but needs tweaks
+**Gate:** Explicit "yes" on the scope statement. Do not read any code until this gate passes.
 
-→ Choose [1-3]:
-```
-
-**Gate:** Explicit yes (1/a) on the scope statement. Do not read any code until this gate passes.
-
-- `1` or `a` → save to `[OUTPUT_DIR]/01-scope.md`, proceed to Stage 2
-- `2` or `b` → ask what's wrong, update, show again
-- `3` or `c` → suggest refinements, get feedback, show again
+- **Yes** → save to `[OUTPUT_DIR]/01-scope.md`, proceed to Stage 2
+- **No** or **refine** → ask what's wrong, update, show again
 
 ---
 
@@ -214,9 +198,14 @@ Based on the scope statement, identify the relevant files. For director2-aws thi
 - Existing helpers or patterns to reuse
 - The test file location (in `suite/<module>/test/`)
 
-Ask: "Which files should I start with? (I'll also look for related files as I read.)"
+Use AskUserQuestion tool:
+- header: "Start files"
+- question: "Which files should I start with? (My guess: [your guess based on ticket])"
+- options:
+  - Your guess is correct, start there
+  - Let me specify different files
 
-Read each file the developer names. Then follow imports, references, and usages to find related files. Use Read to open and quote the actual code.
+Read each file the developer names (or your guess if they confirm). Then follow imports, references, and usages to find related files. Use Read to open and quote the actual code.
 
 ### Investigation document format
 
@@ -276,30 +265,20 @@ Use this in [location] — do not write a new implementation.
 - No sentence contains "probably", "I think", "likely", or "should be"
 - Open questions are listed explicitly, not buried in prose
 
-```
-Does this investigation look accurate?
+Then use AskUserQuestion tool for confirmation:
+- header: "Investigation OK?"
+- question: "Does this investigation look accurate?"
+- options:
+  - Yes, save and proceed to Stage 3
+  - No, something's missing or wrong
+  - Refine, show specific issues
+  - Back, return to Stage 1
 
-1   Yes — save and proceed
-    Use when: All files quoted; no "probably" or "I think"
-    
-2   No — something's missing
-    Use when: Something is wrong or incomplete
-    
-3   Refine — show specific issues
-    Use when: Mostly right but needs corrections
-    
-4   Back — return to Stage 1
-    Use when: Need to redefine scope
+**Gate:** Developer confirms the investigation is accurate and complete.
 
-→ Choose [1-4]:
-```
-
-**Gate:** Developer confirms (1/a) the investigation is accurate and complete.
-
-- `1` or `a` → save to `[OUTPUT_DIR]/02-investigation.md`, proceed to Stage 3
-- `2` or `b` → ask what's wrong, investigate further, update
-- `3` or `c` → ask which items need fixing, investigate further, update
-- `4` or `d` → return to Stage 1
+- **Yes** → save to `[OUTPUT_DIR]/02-investigation.md`, proceed to Stage 3
+- **No** or **refine** → ask what's wrong, investigate further, update
+- **Back** → return to Stage 1
 
 ---
 
@@ -353,26 +332,20 @@ Before asking the developer to approve, verify:
 - [ ] Step 4 is always code review with the AVOD checklist
 - [ ] No step is vague ("implement the feature" — be specific about the method and file)
 
-```
-Does this plan look right?
+Then use AskUserQuestion tool for confirmation:
+- header: "Plan OK?"
+- question: "Does this plan look right?"
+- options:
+  - Yes, save and proceed to Stage 4
+  - No, something's wrong with the plan
+  - Refine, show me what to change
+  - Back, return to Stage 2
 
-1   Yes — save and proceed
-    Use when: Steps, done-criteria, and risks are all clear
-    
-2   No — something's wrong
-    Use when: Something needs fixing or clarifying
-    
-3   Back — return to Stage 2
-    Use when: Need to re-investigate
+**Gate:** Developer explicitly approves the plan. No code is written before this gate passes.
 
-→ Choose [1-3]:
-```
-
-**Gate:** Developer explicitly approves (1/a) the plan. No code is written before this gate passes.
-
-- `1` or `a` → save to `[OUTPUT_DIR]/03-roadmap.md`, proceed to Stage 4
-- `2` or `b` → ask what's wrong, update the plan, show again
-- `3` or `c` → return to Stage 2
+- **Yes** → save to `[OUTPUT_DIR]/03-roadmap.md`, proceed to Stage 4
+- **No** or **refine** → ask what's wrong, update the plan, show again
+- **Back** → return to Stage 2
 
 ---
 
@@ -484,24 +457,15 @@ When the test is written and failing, update Step 1 in the roadmap to `done`.
 
 The developer makes the Java or code change following the Code Change Guide from Stage 4.
 
-**director2-aws:** After each iteration, choose how to build the harness:
+**director2-aws:** After each iteration, use AskUserQuestion tool:
+- header: "Build harness"
+- question: "How would you like to build the harness?"
+- options:
+  - Manual (You run buildenv steps yourself - full control, good for debugging)
+  - Automated (I run buildenv for you - hands-off)
+  - Skip (Use existing image - fast iteration, may fail if image is stale)
 
-```
-How would you like to build the harness?
-
-1   Manual — I'll run buildenv steps myself
-    Use when: You want full control; debugging build issues
-    
-2   Automated — Run buildenv for me
-    Use when: First-time build; want hands-off automation
-    
-3   Skip — Use existing image
-    Use when: Image is fresh; iterating rapidly on code
-
-→ Choose [1-3]:
-```
-
-**If you choose 1 (Manual):**
+**If manual:**
 1. Start the build environment:
    ```bash
    buildenv
@@ -559,28 +523,16 @@ If **clean** (no failures):
 → update Step 3 to `done`, proceed to Step 4
 
 If **failures found**:
-Show the failures with test names and error details.
+Show the failures with test names and error details, then use AskUserQuestion tool:
+- header: "Failures"
+- question: "Which best describes these failures?"
+- options:
+  - Pre-existing (Test fails on main branch too - you'll verify this now)
+  - Fix now (Fix the root cause; re-run suite until clean)
+  - Separate ticket (File new Jira ticket for the collateral damage)
+  - Skip (Requires explicit acknowledgment in code review)
 
-```
-Which best describes these failures?
-
-1   Pre-existing (not caused by my change)
-    Evidence: Test fails on main branch too (you'll verify this now)
-    
-2   New (caused by my change — fix now)
-    Action: Fix the root cause; re-run suite until clean
-    
-3   New (caused by my change — separate ticket)
-    Action: File new Jira ticket for the collateral damage
-    
-4   New (caused by my change — skip for now)
-    Warning: Requires explicit acknowledgment in code review
-    Use only if: You understand the impact and accept the trade-off
-
-→ Choose [1-4]:
-```
-
-**If you choose 1 (Pre-existing):**
+**If pre-existing:**
 1. Confirm by checking the test on main/master branch WITHOUT your changes:
    ```bash
    git stash
@@ -591,19 +543,19 @@ Which best describes these failures?
 3. Document in roadmap Step 3: "Suite has [N] pre-existing failures: [test names]"
 4. Mark Step 3 as `done`
 
-**If you choose 2 (Fix now):**
+**If fix now:**
 - Investigate the failing test(s)
 - Fix the root cause in your implementation or the broken test
 - Re-run the full suite
 - Loop back to Step 3 until all new failures are resolved
 
-**If you choose 3 (Separate ticket):**
+**If separate ticket:**
 - Document which tests failed and suspected root cause
 - Create a follow-up Jira ticket to fix the underlying issue
 - Document in roadmap: "Collateral damage — separate ticket [ID] filed for [tests]"
 - Mark Step 3 as `done` with this caveat
 
-**If you choose 4 (Skip for now):**
+**If skip:**
 - Document in roadmap: "Suite fails on [tests]; developer chose not to fix"
 - Mark Step 3 as `partial` with full details of failures
 - This path requires developer's explicit confirmation in code review (Step 4)
@@ -661,23 +613,17 @@ Harness suite status (director2-aws only):
   - [ ] Developer acknowledges trade-off and impact
 ```
 
-Show the checklist.
+Show the checklist, then ask:
 
 ```
-Does the code review pass?
-
-1   Yes — all items pass
-        
-2   No — some items need fixing
-        
-→ Choose [1-2]:
+Does the code review pass? Yes / no?
 ```
 
-- `1` → update Step 4 to `done`
-- `2` → ask which items failed, let the developer fix them, re-run the checklist
+- **Yes** → update Step 4 to `done`
+- **No** → ask which items failed, let the developer fix them, re-run the checklist
 
 **Special case — collateral damage found in Step 3:**
-If Step 3 found new failures and developer chose Option B.2 (separate ticket) or B.3 (skip), add to the code review:
+If Step 3 found new failures and developer chose "separate ticket" or "skip", add to the code review:
 - Developer must explicitly acknowledge: "I understand this PR introduces collateral damage in [tests]; [separate ticket/acceptance] planned."
 - Update checklist item: "Collateral damage acknowledgment: YES"
 - Without this acknowledgment, Step 4 cannot be marked `done`.
@@ -694,44 +640,26 @@ Before the PR can merge, confirm ALL THREE of these:
 If ANY step is not marked `done`, stop and ask the developer to fix it. Do not proceed to commit.
 
 ```
-Ready to commit?
-
-1   Yes — commit and merge
-        
-2   No — pause
-
-→ Choose [1-2]:
+Ready to commit? Yes / no?
 ```
 
-- `1` → run `git add` on the changed files, then `git commit`. Show the commit hash.
-- `2` → pause and wait
+- **Yes** → run `git add` on the changed files, then `git commit`. Show the commit hash.
+- **No** → pause and wait
 
-After commit:
+After commit, ask:
+
 ```
-PR opened and merged?
-
-1   Yes — confirmed
-        
-2   No — still pending
-
-→ Choose [1-2]:
+PR opened and merged? Yes / no?
 ```
 
-If `1`:
+If yes, ask:
+
 ```
-Has INT/staging confirmed expected behavior?
-
-1   Yes — confirmed
-        
-2   No — waiting
-        
-3   Not deployed yet
-
-→ Choose [1-3]:
+Has INT/staging confirmed expected behavior? Yes / waiting / not deployed yet?
 ```
 
-- `1` → update Step 5 to `done`, update Overall to `done`, proceed to Stage 6
-- `2` or `3` → wait for confirmation before closing
+- **Yes** → update Step 5 to `done`, update Overall to `done`, proceed to Stage 6
+- **Waiting** or **not deployed yet** → wait for confirmation before closing
 
 Save `[OUTPUT_DIR]/05-implementation-log.md` with:
 - Test result (RED/GREEN)
@@ -849,18 +777,14 @@ If automated buildenv:
 
 Save to `[OUTPUT_DIR]/06-completion-report.md`.
 
+Then ask:
+
 ```
-Does this report look accurate?
-
-1   Yes — complete
-        
-2   No — needs correction
-
-→ Choose [1-2]:
+Does this report look accurate? Yes / no?
 ```
 
-- `1` → "✓ Ticket complete. All outputs in `[OUTPUT_DIR]/`."
-- `2` → ask what's wrong, update, show again.
+- **Yes** → "✓ Ticket complete. All outputs in `[OUTPUT_DIR]/`."
+- **No** → ask what's wrong, update, show again.
 
 ---
 
