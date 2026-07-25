@@ -1,0 +1,16 @@
+---
+description: Approve the current declaration and allow writes
+---
+
+The user has approved the declaration. Update `/tmp/claude-declaration.json` to set `"approved": true`.
+
+Then proceed with the implementation, touching ONLY the files listed in `files_to_touch`.
+
+If you discover you need additional files not in the declaration:
+1. Stop immediately
+2. Inform the user
+3. Update the declaration with the new files
+4. Set `"approved": false`
+5. Wait for the user to say "proceed" again
+
+Do not add "bonus" functionality. Do not touch files outside the declaration. When the declared scope is complete, stop.

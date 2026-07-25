@@ -1,0 +1,29 @@
+---
+description: Declare what files you will modify before implementation
+---
+
+Before implementing anything, create a declaration. Write this JSON to `/tmp/claude-declaration.json`:
+
+```json
+{
+  "task": "[one sentence description of what you will do]",
+  "files_to_touch": ["path/to/file1.py", "path/to/file2.py"],
+  "files_not_to_touch": ["everything else"],
+  "what_will_change": "[specific changes you will make]",
+  "what_will_not_change": "[what stays the same]",
+  "done_when": "[measurable criteria for completion]",
+  "approved": false
+}
+```
+
+After writing the declaration file, show it to the user in a clear format and wait for them to say "proceed" before making any changes.
+
+When the user says "proceed", update the declaration to set `"approved": true`.
+
+Only then may you write to the declared files.
+
+If you discover you need to touch a file not in the declaration, you must:
+1. Stop
+2. Update the declaration with the new file
+3. Show the updated declaration
+4. Wait for approval again
