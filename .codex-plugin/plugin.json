@@ -3,5 +3,5 @@
   "version": "1.0.0",
   "description": "Production-grade engineering skills for AI coding agents.",
   "skills": "./skills/",
-  "hooks": "./hooks/hooks.json"
+  "hooks": "./hooks/codex-hooks.json"
 }

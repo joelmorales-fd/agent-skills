@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ROOT=\"${PLUGIN_ROOT:-}\"; if [ -n \"$ROOT\" ] && [ -f \"$ROOT/hooks/codex-session-start.sh\" ]; then bash \"$ROOT/hooks/codex-session-start.sh\"; else true; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ROOT=\"${PLUGIN_ROOT:-}\"; if [ -n \"$ROOT\" ] && [ -f \"$ROOT/hooks/codex-check-declaration.sh\" ]; then bash \"$ROOT/hooks/codex-check-declaration.sh\"; else true; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
