@@ -1,5 +1,5 @@
 ---
-description: AVOD team workflow from Jira ticket to merged, tested code. Six gated stages — intake, investigation, roadmap, code guide, implement+verify, completion report. Enforces harness-first for director2-aws, Spring Boot integration tests for other repos. All AVOD domain knowledge embedded. No stage is skipped. Code is not written until Stage 3 is approved.
+description: AVOD team workflow from Jira ticket to merged, tested code. Six gated stages — intake, investigation, roadmap, code guide, implement+verify, completion report. Enforces harness-first for director2-aws, Gradle harness tests for dmedia, Spring Boot integration tests for other repos. All AVOD domain knowledge embedded. No stage is skipped. Code is not written until Stage 3 is approved. Generates PR description document for developer/reviewer use.
 allowed-tools: [Read, Write, Bash, Grep, Glob, AskUserQuestion, Skill]
 ---
 
@@ -28,7 +28,7 @@ answered      quoted          plan        pre-written    suite clean   record
 ## When to Use
 
 - Developer has an AVOD Jira ticket and needs to go from understanding to merged code
-- Repos: `director2-aws`, `moneyball-aws`, `fw-catalogsync-aws`, or any other AVOD team repo
+- Repos: `director2-aws`, `dmedia`, `moneyball-aws`, `fw-catalogsync-aws`, or any other AVOD team repo
 - Developer can provide the ticket as pasted text or as a URL/reference to fetch
 
 **When NOT to use:** A one-line fix, a config-only change, or work where scope is already fully understood and a plan already exists.
@@ -49,6 +49,7 @@ pwd && ls build.gradle pom.xml run-harness-sidecar.sh 2>/dev/null
 | What you find | Repo type | Test strategy |
 |---------------|-----------|---------------|
 | `run-harness-sidecar.sh` exists | `director2-aws` | Harness XML tests via `./run-harness-sidecar.sh` |
+| `dmedia/` in path + `build.gradle` exists | `dmedia` | Gradle tests: `./gradlew test` (unit); Harness tests: `./gradlew runHarnessTests` (Java/TestContainers) |
 | `build.gradle` + no harness script | Spring Boot / Gradle | `./gradlew test` + Spring Boot integration tests (`@SpringBootTest`) |
 | `pom.xml` + no harness script | Spring Boot / Maven | `mvn test` + Spring Boot integration tests |
 | Neither | Unknown | Ask the developer: "What test command does this repo use?" |
@@ -58,6 +59,12 @@ Tell the developer what was detected before starting:
 ✓ Detected: director2-aws (harness)
   Test command: ./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<name>.xml
   Suite command: ./run-harness-sidecar.sh -p -m -t 10 <module>
+```
+or:
+```
+✓ Detected: dmedia (Gradle + harness)
+  Test command: ./gradlew test (unit tests, excludes harness)
+  Harness command: ./gradlew runHarnessTests (Java integration tests with TestContainers)
 ```
 or:
 ```
@@ -72,7 +79,7 @@ Store the detected repo type and commands — use them in every stage that refer
 
 After reporting the detected repo, ask:
 
-> "Where should I save all workflow documents (scope, investigation, roadmap, code guide, implementation log, completion report)?
+> "Where should I save all workflow documents (scope, investigation, roadmap, code guide, implementation log, pull-request, completion report)?
 > Press Enter to use the current directory (`[show the result of pwd]`), or type a path."
 
 - If the developer provides a path → use that as OUTPUT_DIR. Create it if it does not exist.
@@ -149,7 +156,7 @@ After all five questions are answered, write:
 SCOPE STATEMENT
 ───────────────
 Ticket:       [ID and title]
-Repo:         [director2-aws / moneyball-aws / fw-catalogsync-aws / other]
+Repo:         [director2-aws / dmedia / moneyball-aws / fw-catalogsync-aws / other]
 Type:         [new feature / behavior change / bug fix / config]
 Goal:         [One sentence — what we are building and why]
 Done when:    [Specific, testable condition from question 3]
@@ -305,6 +312,9 @@ Using the scope from Stage 1 and investigation from Stage 2, generate the roadma
 **Harness rule (director2-aws):**
 Step 1 is always a harness XML test. It must be written before any Java changes. The done-when for Step 1 is: `./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<name>.xml` returns RED (failing). A plan without this step is not approved.
 
+**Harness rule (dmedia):**
+Step 1 is a failing harness test (Java JUnit test with TestContainers). It must be written before any implementation changes. The done-when for Step 1 is: `./gradlew runHarnessTests --tests "*.TestClassName"` returns RED (failing). A plan without this step is not approved.
+
 **Spring Boot rule (other repos):**
 Step 1 is a failing integration test or unit test written before any implementation. Done-when: `./gradlew test` or `mvn test` returns RED. If the repo supports `@SpringBootTest` end-to-end tests, prefer those for the acceptance case.
 
@@ -430,6 +440,12 @@ Remind the developer: "Write the test file now, before touching any implementati
 ```
 Expected result: RED (failing). If it passes immediately, the test is wrong — it is testing something that already works, not the new behavior.
 
+**dmedia:** Write the harness integration test (Java JUnit class extending DMediaIntegrationTestBase) at the path named in the test plan. Run it:
+```bash
+./gradlew runHarnessTests --tests "*.SomeHarnessTest"
+```
+Expected result: RED (failing). If it passes immediately, the test is wrong.
+
 **Spring Boot repos:** Write the integration or unit test at the path named in the test plan. Run:
 ```bash
 ./gradlew test --tests "com.example.SomeServiceIT"
@@ -453,6 +469,11 @@ Then run the specific test from the host:
 ./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<test-name>.xml
 ```
 
+**dmedia:** Run:
+```bash
+./gradlew runHarnessTests --tests "*.SomeHarnessTest"
+```
+
 **Spring Boot repos:** Run:
 ```bash
 ./gradlew test --tests "com.example.SomeServiceIT"
@@ -465,6 +486,12 @@ When the test passes (GREEN), update Step 2 in the roadmap to `done`.
 **director2-aws:**
 ```bash
 ./run-harness-sidecar.sh -p -m -t 10 <module>
+```
+
+**dmedia:**
+```bash
+./gradlew test              # unit tests (excludes harness)
+./gradlew runHarnessTests   # full harness integration suite (Java/TestContainers)
 ```
 
 **Spring Boot repos:**
@@ -560,7 +587,7 @@ After commit, use AskUserQuestion:
   - options:
     - Yes, verified
     - No, waiting
-  - `yes` → update Step 5 to `done`, update Overall to `done`, proceed to Stage 6
+  - `yes` → update Step 5 to `done`, update Overall to `done`, proceed to create pull-request document
   - `no` → wait for confirmation before closing
 
 Save `[OUTPUT_DIR]/05-implementation-log.md` with:
@@ -569,6 +596,85 @@ Save `[OUTPUT_DIR]/05-implementation-log.md` with:
 - Code review result (checklist items, any that needed fixing)
 - Commit hash
 - Merge status and INT confirmation
+
+### Create Pull Request Document
+
+After Step 5 is done and the PR is merged, generate the pull-request document that developers will use to describe the changes:
+
+```markdown
+# PR: [Jira ID] — [Short title]
+
+## Title
+
+```
+[Jira ID]: [One-line description of what changed]
+```
+
+---
+
+## Description
+
+### Root cause
+
+[If this is a bug fix, explain the root cause. Quote relevant code or database schema that explains why the issue occurred. Be specific — reference table names, column types, query patterns.]
+
+[If this is a new feature, explain what capability was missing and why it's needed.]
+
+### Fix
+
+[Describe the solution in 1-3 sentences. If it's a simple change, show the before/after code snippet.]
+
+Example:
+```java
+// Before:
+.createFunc("group_concat(? ORDER BY ? SEPARATOR ' ')", ...)
+
+// After:
+.createFunc("group_concat(DISTINCT ? ORDER BY ? SEPARATOR ' ')", ...)
+```
+
+### Files changed
+
+| File | Change |
+|------|--------|
+| [path/to/File.java] | [One sentence describing what changed in this file] |
+| [path/to/TestFile.java] | [New test / modified test — what it verifies] |
+| [path/to/fixture.sql] | [Test fixture if applicable] |
+
+---
+
+## Test Plan
+
+**Test class:** [TestClassName] or [test-filename.xml]
+**Method/Case:** [specific test method or case name]
+
+[Step-by-step description of how the test verifies the fix or new feature:]
+
+1. [Setup step — what data/state is created]
+2. [Action step — what operation is triggered]
+3. [Assertion step — what is verified]
+
+[Include the test command:]
+```bash
+[command to run the test — e.g., ./run-harness-sidecar.sh or ./gradlew test]
+```
+
+---
+
+## Notes
+
+[Any important context for reviewers:]
+- [Items explicitly out of scope]
+- [Known limitations or future work]
+- [Deployment order if relevant (INT before PROD, etc.)]
+- [Related tickets or dependencies]
+```
+
+Save to `[OUTPUT_DIR]/06-pull-request.md`.
+
+Tell the developer: "✓ Pull request document saved to `06-pull-request.md`."
+
+Proceed to Stage 6.
 
 **Gate:** All five roadmap steps marked `done`.
 
@@ -584,7 +690,7 @@ Generate the completion report in this format:
 # Completion Report: [ticket title]
 
 **Ticket:** [Jira ID and title]
-**Repo:** [director2-aws / moneyball-aws / fw-catalogsync-aws]
+**Repo:** [director2-aws / dmedia / moneyball-aws / fw-catalogsync-aws]
 **Date:** [today]
 **Status:** Done — merged and verified
 
@@ -652,11 +758,12 @@ Generate the completion report in this format:
 - Roadmap: `[OUTPUT_DIR]/03-roadmap.md` (all steps: done)
 - Code guide: `[OUTPUT_DIR]/04-code-guide.md`
 - Implementation log: `[OUTPUT_DIR]/05-implementation-log.md`
+- Pull request: `[OUTPUT_DIR]/06-pull-request.md`
 - Commit: [hash]
 - PR: [link or number]
 ```
 
-Save to `[OUTPUT_DIR]/06-completion-report.md`.
+Save to `[OUTPUT_DIR]/07-completion-report.md`.
 
 Use AskUserQuestion:
 - header: "Report OK?"
@@ -681,7 +788,8 @@ All saved to OUTPUT_DIR (chosen by the developer during setup; defaults to the r
   03-roadmap.md             Stage 3 — living plan (updated as steps complete)
   04-code-guide.md          Stage 4 — code guide + test plan
   05-implementation-log.md  Stage 5 — test results, checklist, commit hash
-  06-completion-report.md   Stage 6 — AI-attributed record
+  06-pull-request.md        Stage 5 — PR description for developer/reviewers
+  07-completion-report.md   Stage 6 — AI-attributed record
 ```
 
 Create OUTPUT_DIR if it does not exist before writing any file.
@@ -767,7 +875,8 @@ After completing all six stages, confirm:
 - [ ] Full suite was clean (or pre-existing failures confirmed) before Step 3 was marked done
 - [ ] AVOD checklist ran against the diff — all items passed
 - [ ] INT or staging confirmed expected behavior
-- [ ] All six output files exist in `[OUTPUT_DIR]/`
+- [ ] All seven output files exist in `[OUTPUT_DIR]/`
+- [ ] Pull request document accurately describes the change for reviewers
 - [ ] Completion report reflects what actually happened, not a template
 
 ---

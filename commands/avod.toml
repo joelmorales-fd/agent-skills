@@ -1,4 +1,4 @@
-description = "AVOD team workflow from Jira ticket to merged, tested code. Six gated stages — intake, investigation, roadmap, code guide, implement+verify, completion report. Enforces harness-first for director2-aws, Spring Boot integration tests for other repos."
+description = "AVOD team workflow from Jira ticket to merged, tested code. Six gated stages — intake, investigation, roadmap, code guide, implement+verify, completion report. Enforces harness-first for director2-aws, Gradle harness tests for dmedia, Spring Boot integration tests for other repos. Generates PR description document for developer/reviewer use."
 allowed_tools = ["Read", "Write", "Bash", "Grep", "Glob", "AskUserQuestion", "Skill"]
 
 prompt = """

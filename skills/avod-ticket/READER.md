@@ -19,7 +19,7 @@ Each stage produces a document and/or verified result. **No code is written unti
 **What happens:** You paste your Jira ticket (or give a URL), and the skill asks five clarifying questions.
 
 **Questions you'll answer:**
-1. **Which repo?** Choose from director2-aws, moneyball-aws, fw-catalogsync-aws, or other
+1. **Which repo?** Choose from director2-aws, dmedia, moneyball-aws, fw-catalogsync-aws, or other
 2. **What kind of change?** Bug fix, behavior change, new feature, or config
 3. **What does "done" look like?** What API endpoint changes? What should it return?
 4. **Constraints?** Backwards compatibility, no-touch zones, deployment order?
@@ -76,7 +76,7 @@ Does this investigation look accurate?
 | 4 | Code review | AVOD checklist passes |
 | 5 | Merge + verify | INT/staging confirms behavior |
 
-**Key feature:** For director2-aws repos, Step 1 is **always a harness test written before any Java changes**.
+**Key feature:** For director2-aws repos, Step 1 is **always a harness XML test written before any Java changes**. For dmedia repos, Step 1 is **always a Java harness test (JUnit with TestContainers) written before any implementation changes**.
 
 **Decision point:**
 ```
@@ -388,7 +388,7 @@ Status updates as you work. Always shows what's done, what's next, what's blocke
 
 **Use when:**
 - You have a Jira ticket and need to go from understanding to merged code
-- You're working in director2-aws, moneyball-aws, fw-catalogsync-aws, or similar AVOD repos
+- You're working in director2-aws, dmedia, moneyball-aws, fw-catalogsync-aws, or similar AVOD repos
 - You want step-by-step guidance with clear gates and approval points
 - You need to document your decisions (why you chose this buildenv approach, how you handled failures)
 
@@ -428,7 +428,8 @@ Status updates as you work. Always shows what's done, what's next, what's blocke
 03-roadmap.md            ← Step-by-step plan (updated as you work)
 04-code-guide.md         ← Exact code changes + test plan
 05-implementation-log.md ← Test results, checklist, commit hash
-06-completion-report.md  ← Honest record of what happened
+06-pull-request.md       ← PR description for developer/reviewers
+07-completion-report.md  ← Honest record of what happened
 ```
 
 All saved to your chosen directory (defaults to repo root).
