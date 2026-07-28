@@ -44,13 +44,14 @@ fi
 # If no declaration exists, block with clear message
 if [[ ! -f "$DECLARATION_FILE" ]]; then
   log_event "BLOCK" "$TARGET_FILE" "no declaration found"
-  echo "╔═══════════════════════════════════════════════════════════════╗" >&2
-  echo "║  BLOCKED: No declaration found.                               ║" >&2
-  echo "║                                                               ║" >&2
-  echo "║  Before writing any file, you must declare your scope:        ║" >&2
-  echo "║  Use /declare or write a declaration to:                      ║" >&2
-  echo "║  /tmp/claude-declaration.json                                 ║" >&2
-  echo "╚═══════════════════════════════════════════════════════════════╝" >&2
+  echo "" >&2
+  echo "⛔ BLOCKED: No declaration found" >&2
+  echo "" >&2
+  echo "Before writing any file, you must declare your scope." >&2
+  echo "" >&2
+  echo "Use /declare or write a declaration to:" >&2
+  echo "  /tmp/claude-declaration.json" >&2
+  echo "" >&2
   exit 2
 fi
 
@@ -99,11 +100,11 @@ validate_declaration() {
 
 if ! validate_declaration "$DECLARATION_FILE"; then
   log_event "BLOCK" "$TARGET_FILE" "invalid declaration structure"
-  echo "╔═══════════════════════════════════════════════════════════════╗" >&2
-  echo "║  BLOCKED: Declaration file is invalid.                        ║" >&2
-  echo "║                                                               ║" >&2
-  echo "║  Fix the declaration structure and try again.                 ║" >&2
-  echo "╚═══════════════════════════════════════════════════════════════╝" >&2
+  echo "" >&2
+  echo "⛔ BLOCKED: Declaration file is invalid" >&2
+  echo "" >&2
+  echo "Fix the declaration structure and try again." >&2
+  echo "" >&2
   exit 2
 fi
 
@@ -111,11 +112,11 @@ fi
 APPROVED=$(jq -r '.approved // false' "$DECLARATION_FILE" 2>/dev/null)
 if [[ "$APPROVED" != "true" ]]; then
   log_event "BLOCK" "$TARGET_FILE" "declaration not approved"
-  echo "╔═══════════════════════════════════════════════════════════════╗" >&2
-  echo "║  BLOCKED: Declaration not yet approved.                       ║" >&2
-  echo "║                                                               ║" >&2
-  echo "║  User must say 'proceed' to approve the declaration.          ║" >&2
-  echo "╚═══════════════════════════════════════════════════════════════╝" >&2
+  echo "" >&2
+  echo "⛔ BLOCKED: Declaration not yet approved" >&2
+  echo "" >&2
+  echo "User must say 'proceed' to approve the declaration." >&2
+  echo "" >&2
   exit 2
 fi
 
@@ -129,9 +130,9 @@ done < <(jq -r '.files_to_touch[]' "$DECLARATION_FILE" 2>/dev/null)
 
 if [[ ${#approved_files[@]} -eq 0 ]]; then
   log_event "BLOCK" "$TARGET_FILE" "no files in files_to_touch"
-  echo "╔═══════════════════════════════════════════════════════════════╗" >&2
-  echo "║  BLOCKED: No files declared in files_to_touch.                ║" >&2
-  echo "╚═══════════════════════════════════════════════════════════════╝" >&2
+  echo "" >&2
+  echo "⛔ BLOCKED: No files declared in files_to_touch" >&2
+  echo "" >&2
   exit 2
 fi
 
@@ -169,20 +170,31 @@ done
 TASK=$(jq -r '.task // "(no task description)"' "$DECLARATION_FILE" 2>/dev/null)
 log_event "BLOCK" "$TARGET_FILE" "file not in declaration"
 
-echo "╔═══════════════════════════════════════════════════════════════╗" >&2
-echo "║  BLOCKED: File not in declaration.                            ║" >&2
-echo "║                                                               ║" >&2
-echo "║  Current task: $TASK" >&2
-echo "║  Attempted write: $TARGET_FILE" >&2
-echo "║                                                               ║" >&2
-echo "║  Declared files:                                              ║" >&2
+# Truncate path for display (keep last 3 components)
+truncate_path() {
+  local path="$1"
+  local components=$(echo "$path" | tr '/' '\n' | wc -l)
+  if [[ $components -gt 3 ]]; then
+    echo "...$(echo "$path" | rev | cut -d'/' -f1-3 | rev)"
+  else
+    echo "$path"
+  fi
+}
+
+echo "" >&2
+echo "⛔ BLOCKED: File not in declaration" >&2
+echo "" >&2
+echo "Task: $TASK" >&2
+echo "Attempted: $(truncate_path "$TARGET_FILE")" >&2
+echo "" >&2
+echo "Declared files:" >&2
 for f in "${approved_files[@]}"; do
-  echo "║    - $f" >&2
+  echo "  • $(truncate_path "$f")" >&2
 done
-echo "║                                                               ║" >&2
-echo "║  If this file is needed for the task:                         ║" >&2
-echo "║  1. Update the declaration to include this file               ║" >&2
-echo "║  2. Set approved=false                                        ║" >&2
-echo "║  3. Wait for user to say 'proceed'                            ║" >&2
-echo "╚═══════════════════════════════════════════════════════════════╝" >&2
+echo "" >&2
+echo "To fix:" >&2
+echo "  1. Update declaration to include this file" >&2
+echo "  2. Set approved=false" >&2
+echo "  3. Wait for 'proceed'" >&2
+echo "" >&2
 exit 2
