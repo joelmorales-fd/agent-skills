@@ -19,6 +19,15 @@
             "command": "ROOT=\"${PLUGIN_ROOT:-}\"; if [ -n \"$ROOT\" ] && [ -f \"$ROOT/hooks/codex-check-declaration.sh\" ]; then bash \"$ROOT/hooks/codex-check-declaration.sh\"; else true; fi"
           }
         ]
+      },
+      {
+        "matcher": "exec_command|exec|functions.exec_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ROOT=\"${PLUGIN_ROOT:-}\"; if [ -n \"$ROOT\" ] && [ -f \"$ROOT/hooks/codex-check-declaration.sh\" ]; then bash \"$ROOT/hooks/codex-check-declaration.sh\"; else true; fi"
+          }
+        ]
       }
     ]
   }

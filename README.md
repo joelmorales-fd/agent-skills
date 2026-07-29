@@ -143,6 +143,8 @@ Use agent definitions from `agents/` as Copilot personas and skill content in `.
 
 Codex supports installing this repo as a local plugin. See [docs/codex-setup.md](docs/codex-setup.md).
 
+The Codex plugin includes a session-start hook plus declaration enforcement for `apply_patch` and common shell-based file writes.
+
 For non-plugin agents, skills are plain Markdown and work with any agent that accepts system prompts or instruction files. See [docs/getting-started.md](docs/getting-started.md).
 
 </details>

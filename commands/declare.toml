@@ -19,11 +19,13 @@ After writing the declaration file, show it to the user in a clear format and wa
 
 When the user says "proceed", update the declaration to set `"approved": true`.
 
-Only then may you write to the declared files.
+Only then may you write to the declared files. This includes shell-based edits and file mutations through `exec_command` such as `cp`, `mv`, `touch`, `mkdir`, `perl -i`, `sed -i`, redirections (`>`), or similar shortcuts.
 
 If you discover you need to touch a file not in the declaration, you must:
 1. Stop
 2. Update the declaration with the new file
 3. Show the updated declaration
 4. Wait for approval again
+
+Do not bypass the declaration with shell write tricks if `apply_patch` is blocked. Update the declaration instead.
 """

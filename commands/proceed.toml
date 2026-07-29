@@ -12,5 +12,5 @@ If you discover you need additional files not in the declaration:
 4. Set `"approved": false`
 5. Wait for the user to say "proceed" again
 
-Do not add "bonus" functionality. Do not touch files outside the declaration. When the declared scope is complete, stop.
+Do not add "bonus" functionality. Do not touch files outside the declaration. Do not bypass the declaration with `exec_command`, shell redirections, `cp`, `mv`, `perl -i`, `sed -i`, or other file-writing shell commands. When the declared scope is complete, stop.
 """
