@@ -396,7 +396,7 @@ Work through this sequence in order. Update the roadmap step statuses as each st
 
 Remind the developer: "Write the test file now, before touching any implementation code."
 
-**director2-aws:** Write the harness XML test file at the path named in the test plan. Run it:
+**director2-aws:** Write the harness XML test file at the path named in the test plan. If the standalone `director2-harness-test` skill is available, use it for the actual harness execution workflow. Otherwise run:
 ```bash
 ./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<test-name>.xml
 ```
@@ -416,7 +416,7 @@ When the test is written and failing, update Step 1 in the roadmap to `done`.
 
 The developer makes the Java or code change following the Code Change Guide from Stage 4.
 
-**director2-aws:** After each iteration, recompile inside the build container:
+**director2-aws:** After each iteration, use `director2-harness-test` when available for the actual harness execution workflow. If it is not available, use the inline fallback below. Recompile inside the build container:
 ```bash
 ./gradlew clean build
 ```

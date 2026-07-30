@@ -434,7 +434,7 @@ Work through this sequence in order. Update the roadmap step statuses as each st
 
 Remind the developer: "Write the test file now, before touching any implementation code."
 
-**director2-aws:** Write the harness XML test file at the path named in the test plan. Run it:
+**director2-aws:** Write the harness XML test file at the path named in the test plan. If the standalone `director2-harness-test` skill is available, use it for the actual harness execution workflow. Otherwise run:
 ```bash
 ./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<test-name>.xml
 ```
@@ -460,7 +460,7 @@ When the test is written and failing, update Step 1 in the roadmap to `done`.
 
 The developer makes the Java or code change following the Code Change Guide from Stage 4.
 
-**director2-aws:** After each iteration, recompile inside the build container:
+**director2-aws:** After each iteration, use `director2-harness-test` when available for the actual harness execution workflow. If it is not available, use the inline fallback below. Recompile inside the build container:
 ```bash
 ./gradlew clean build
 ```
@@ -837,6 +837,7 @@ This reference is embedded here so the skill works without any external files.
 - Use `fakeAdvertContentDefinitionCreate` to make a content ID AVOD-eligible in a test.
 - Lock `<now>` to a fixed timestamp when testing time-sensitive behavior.
 - Use SQL fixtures (`.sql` files in the test directory) when no fake-create op exists.
+- If `director2-harness-test` is available, prefer it for the actual harness-run workflow and use the commands below as fallback reference.
 - Run a single test: `./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<name>.xml`
 - Run the full module suite: `./run-harness-sidecar.sh -p -m -t 10 <module>`
 

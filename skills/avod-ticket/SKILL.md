@@ -452,6 +452,7 @@ Remind the developer: "Write the test file now, before touching any implementati
 ```bash
 ./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<test-name>.xml
 ```
+If the standalone `director2-harness-test` skill is available, use it for the actual harness execution workflow. If not, follow the inline commands here.
 Expected result: RED (failing). If it passes immediately, the test is wrong — it is testing something that already works, not the new behavior.
 
 **dmedia:** Write the harness integration test (Java JUnit class extending DMediaIntegrationTestBase) at the path named in the test plan. Run it:
@@ -481,6 +482,8 @@ The developer makes the Java or code change following the Code Change Guide from
   - Manual (You run buildenv steps yourself - full control, good for debugging)
   - Automated (I run buildenv for you - hands-off)
   - Skip (Use existing image - fast iteration, may fail if image is stale)
+
+If the standalone `director2-harness-test` skill is available, use it for the actual harness execution path and keep the options above as the decision inputs that feed that skill. If it is not available, follow the inline fallback below.
 
 **If manual:**
 1. Start the build environment:
@@ -961,6 +964,7 @@ This reference is embedded here so the skill works without any external files.
 - Use SQL fixtures (`.sql` files in the test directory) when no fake-create op exists.
 - Run a single test: `./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<name>.xml`
 - Run the full module suite: `./run-harness-sidecar.sh -p -m -t 10 <module>`
+- If `director2-harness-test` is available, prefer it for the actual harness-run workflow and use this section as fallback reference.
 
 **Buildenv and image creation:**
 - buildenv creates a Docker container with compilation environment
