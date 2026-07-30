@@ -30,12 +30,20 @@ if [[ -z "${DECLARATION_CLIENT:-}" && -n "${CLAUDE_CODE_SESSION_ID:-}" ]]; then
   DECLARATION_CLIENT="claude"
 fi
 
+if [[ -z "${DECLARATION_CLIENT:-}" && -n "${CODEX_THREAD_ID:-}" ]]; then
+  DECLARATION_CLIENT="codex"
+fi
+
 if [[ -z "${DECLARATION_SESSION_ID:-}" ]]; then
   DECLARATION_SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null || true)"
 fi
 
 if [[ -z "${DECLARATION_SESSION_ID:-}" && -n "${CLAUDE_CODE_SESSION_ID:-}" ]]; then
   DECLARATION_SESSION_ID="$CLAUDE_CODE_SESSION_ID"
+fi
+
+if [[ -z "${DECLARATION_SESSION_ID:-}" && -n "${CODEX_THREAD_ID:-}" ]]; then
+  DECLARATION_SESSION_ID="$CODEX_THREAD_ID"
 fi
 
 if [[ -z "${DECLARATION_CWD:-}" ]]; then

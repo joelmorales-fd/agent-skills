@@ -7,7 +7,7 @@ TMP_ROOT="${TMPDIR:-/tmp}"
 TMP_ROOT="${TMP_ROOT%/}"
 DECLARATION_DIR="$TMP_ROOT/agent-skills-declarations"
 CLIENT="${DECLARATION_CLIENT:-}"
-SESSION_ID="${DECLARATION_SESSION_ID:-${CLAUDE_CODE_SESSION_ID:-}}"
+SESSION_ID="${DECLARATION_SESSION_ID:-${CLAUDE_CODE_SESSION_ID:-${CODEX_THREAD_ID:-}}}"
 CWD_PATH="${DECLARATION_CWD:-${PWD:-$(pwd)}}"
 
 mkdir -p "$DECLARATION_DIR"
@@ -15,6 +15,8 @@ mkdir -p "$DECLARATION_DIR"
 if [[ -z "$CLIENT" ]]; then
   if [[ -n "${CLAUDE_CODE_SESSION_ID:-}" ]]; then
     CLIENT="claude"
+  elif [[ -n "${CODEX_THREAD_ID:-}" ]]; then
+    CLIENT="codex"
   else
     CLIENT="agent"
   fi
