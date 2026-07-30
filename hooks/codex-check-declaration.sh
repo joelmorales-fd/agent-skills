@@ -13,6 +13,18 @@ INPUT="$(cat)"
 TOOL_NAME="$(printf '%s' "$INPUT" | jq -r '.tool_name // empty')"
 PATCH_TEXT="$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty')"
 TARGET_FILE="$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')"
+SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // empty')"
+HOOK_CWD="$(printf '%s' "$INPUT" | jq -r '.cwd // empty')"
+
+export DECLARATION_CLIENT="${DECLARATION_CLIENT:-codex}"
+if [[ -n "$SESSION_ID" ]]; then
+  export DECLARATION_SESSION_ID="$SESSION_ID"
+fi
+if [[ -n "$HOOK_CWD" ]]; then
+  export DECLARATION_CWD="$HOOK_CWD"
+elif [[ -z "${DECLARATION_CWD:-}" ]]; then
+  export DECLARATION_CWD="$(pwd)"
+fi
 
 extract_exec_command() {
   printf '%s' "$INPUT" | jq -r '

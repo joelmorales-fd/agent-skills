@@ -5,9 +5,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOOK="$SCRIPT_DIR/codex-check-declaration.sh"
-DECLARATION_FILE="/tmp/claude-declaration.json"
+RESOLVER="$SCRIPT_DIR/resolve-declaration-file.sh"
 BACKUP_FILE=""
 TEST_HOME="$(mktemp -d)"
+export DECLARATION_CLIENT="codex"
+export DECLARATION_SESSION_ID="test-session"
+export DECLARATION_CWD="/tmp/test-project"
+DECLARATION_FILE="$(bash "$RESOLVER")"
 
 cleanup() {
   rm -rf "$TEST_HOME"

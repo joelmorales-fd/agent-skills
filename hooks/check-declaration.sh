@@ -4,9 +4,9 @@
 # Called by Claude Code before every Write/Edit/MultiEdit.
 # Receives JSON input via stdin from Claude Code hooks.
 
-set -e
+set -euo pipefail
 
-DECLARATION_FILE="/tmp/claude-declaration.json"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="${HOME}/.claude/audit.log"
 
 # Audit logging function
@@ -20,8 +20,36 @@ log_event() {
 # Read JSON input from stdin
 INPUT=$(cat)
 
+if ! command -v jq >/dev/null 2>&1; then
+  log_event "ERROR" "(unknown file)" "jq not installed"
+  echo "ERROR: jq is required for declaration checking. Install with: brew install jq" >&2
+  exit 2
+fi
+
+if [[ -z "${DECLARATION_CLIENT:-}" && -n "${CLAUDE_CODE_SESSION_ID:-}" ]]; then
+  DECLARATION_CLIENT="claude"
+fi
+
+if [[ -z "${DECLARATION_SESSION_ID:-}" ]]; then
+  DECLARATION_SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null || true)"
+fi
+
+if [[ -z "${DECLARATION_SESSION_ID:-}" && -n "${CLAUDE_CODE_SESSION_ID:-}" ]]; then
+  DECLARATION_SESSION_ID="$CLAUDE_CODE_SESSION_ID"
+fi
+
+if [[ -z "${DECLARATION_CWD:-}" ]]; then
+  DECLARATION_CWD="$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null || true)"
+fi
+
+if [[ -z "${DECLARATION_CWD:-}" ]]; then
+  DECLARATION_CWD="$(pwd)"
+fi
+
+DECLARATION_FILE="${DECLARATION_FILE:-$(bash "$SCRIPT_DIR/resolve-declaration-file.sh")}"
+
 # Extract file path from tool_input.file_path
-TARGET_FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+TARGET_FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')
 
 # If no file path found, allow (might be a non-file tool)
 if [[ -z "$TARGET_FILE" ]]; then
@@ -30,7 +58,7 @@ if [[ -z "$TARGET_FILE" ]]; then
 fi
 
 # Always allow writes to the declaration file itself
-if [[ "$TARGET_FILE" == "/tmp/claude-declaration.json" ]]; then
+if [[ "$TARGET_FILE" == "$DECLARATION_FILE" ]]; then
   log_event "ALLOW" "$TARGET_FILE" "declaration file"
   exit 0
 fi
@@ -50,15 +78,8 @@ if [[ ! -f "$DECLARATION_FILE" ]]; then
   echo "Before writing any file, you must declare your scope." >&2
   echo "" >&2
   echo "Use /declare or write a declaration to:" >&2
-  echo "  /tmp/claude-declaration.json" >&2
+  echo "  $DECLARATION_FILE" >&2
   echo "" >&2
-  exit 2
-fi
-
-# Check if jq is available
-if ! command -v jq &> /dev/null; then
-  log_event "ERROR" "$TARGET_FILE" "jq not installed"
-  echo "ERROR: jq is required for declaration checking. Install with: brew install jq" >&2
   exit 2
 fi
 

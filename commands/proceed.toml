@@ -1,7 +1,14 @@
 description = "Approve the current declaration and allow writes"
 
 prompt = """
-The user has approved the declaration. Update `/tmp/claude-declaration.json` to set `"approved": true`.
+Resolve the active declaration path first:
+
+```bash
+DECLARATION_FILE=$(bash ${CLAUDE_PLUGIN_ROOT}/hooks/resolve-declaration-file.sh)
+echo "$DECLARATION_FILE"
+```
+
+The user has approved the declaration. Update that file to set `"approved": true`.
 
 Then proceed with the implementation, touching ONLY the files listed in `files_to_touch`.
 
