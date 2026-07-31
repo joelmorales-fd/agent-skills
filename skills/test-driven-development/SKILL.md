@@ -1,6 +1,6 @@
 ---
 name: test-driven-development
-description: Drives development with tests. Use when implementing any logic, fixing any bug, or changing any behavior. Use when you need to prove that code works, when a bug report arrives, or when you're about to modify existing functionality.
+description: Drives development with tests. Use when implementing any logic, fixing any bug, or changing any behavior. Use when you need to prove that code works, when a bug report arrives, or when you're about to modify existing functionality. When ordinary tests pass but you still need proof that they would catch meaningful logic mistakes, continue with `mutation-test-check`.
 ---
 
 # Test-Driven Development
@@ -18,6 +18,8 @@ Write a failing test before writing the code that makes it pass. For bug fixes, 
 - Any change that could break existing behavior
 
 **When NOT to use:** Pure configuration changes, documentation updates, or static content changes that have no behavioral impact.
+
+**Escalation:** If the ordinary tests pass but you still doubt whether they are strong enough to catch real logic mistakes, continue with `mutation-test-check`.
 
 **Related:** For browser-based changes, combine TDD with runtime verification using Chrome DevTools MCP — see the Browser Testing section below.
 

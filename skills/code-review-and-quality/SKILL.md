@@ -1,6 +1,6 @@
 ---
 name: code-review-and-quality
-description: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch.
+description: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch. When the review question becomes whether passing tests are actually protective, continue with `mutation-test-check`.
 ---
 
 # Code Review and Quality
@@ -18,6 +18,7 @@ Multi-dimensional code review with quality gates. Every change gets reviewed bef
 - When another agent or model produced code you need to evaluate
 - When refactoring existing code
 - After any bug fix (review both the fix and the regression test)
+- When you need to decide whether a "covered by tests" claim is actually trustworthy
 
 ## The Six-Axis Review
 

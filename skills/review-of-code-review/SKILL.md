@@ -1,6 +1,6 @@
 ---
 name: review-of-code-review
-description: Judge the quality of a code review artifact rather than the code under review. Use when comparing code review outputs, deciding whether a code review is trustworthy enough to act on, evaluating whether a prompt or workflow change improved code review quality, or checking whether a code review is grounded, complete enough, proportionate, and useful.
+description: Judge the quality of a code review artifact rather than the code under review. Use when comparing code review outputs, deciding whether a code review is trustworthy enough to act on, evaluating whether a prompt or workflow change improved code review quality, or checking whether a code review is grounded, complete enough, proportionate, and useful. If a review claims the code is well tested and you need proof, continue with `mutation-test-check`.
 ---
 
 # Review of Code Review
@@ -20,6 +20,7 @@ Judge the code review as a decision-making artifact, not just a bag of individua
 - Evaluate whether a prompt or workflow change improved code review quality
 - Decide whether a benchmark failure reflects poor review quality
 - Check whether a review is grounded, complete enough, proportionate, and useful
+- Check whether a review's "well tested" claim needs stronger evidence than a passing suite
 
 ## When NOT to Use
 

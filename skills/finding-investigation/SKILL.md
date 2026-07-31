@@ -1,6 +1,6 @@
 ---
 name: finding-investigation
-description: Decide whether a finding is grounded, weakly grounded, ungrounded, or needs more evidence. Use when a generated finding looks plausible but not yet trustworthy, when a reviewer challenges a finding, when a claim may overreach what cited code proves, or when you need to decide whether to keep, narrow, drop, or continue investigating a finding.
+description: Decide whether a finding is grounded, weakly grounded, ungrounded, or needs more evidence. Use when a generated finding looks plausible but not yet trustworthy, when a reviewer challenges a finding, when a claim may overreach what cited code proves, or when you need to decide whether to keep, narrow, drop, or continue investigating a finding. If the missing proof is really test strength, continue with `mutation-test-check`.
 ---
 
 # Finding Investigation
@@ -27,6 +27,8 @@ This skill exists for one repeated loop: deciding whether a finding is grounded,
 - Hook or runtime enforcement debugging
 
 Use `code-review-gap-investigation`, `review-of-code-review`, `plugin-runtime-fix`, or `benchmark-failure-triage` for those.
+
+If the question becomes "would the existing tests actually fail on a meaningful logic mutation?", continue with `mutation-test-check`.
 
 ## Required Inputs
 
