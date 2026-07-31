@@ -56,7 +56,7 @@ Tell the developer what was detected before starting:
 ```
 ✓ Detected: director2-aws (harness)
   Test command: ./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<name>.xml
-  Suite command: ./run-harness-sidecar.sh -p -m -t 10 <module>
+  Suite command: ./run-harness-sidecar.sh -p -m -t 6 <module>
 ```
 or:
 ```
@@ -436,8 +436,12 @@ When the test passes (GREEN), update Step 2 in the roadmap to `done`.
 
 **director2-aws:**
 ```bash
-./run-harness-sidecar.sh -p -m -t 10 <module>
+./run-harness-sidecar.sh -p -m -t 6 <module>
 ```
+
+This harness flow is only for `director2-aws`.
+- Choose `-t` from Docker Desktop resources instead of treating `10` as a default.
+- Example: `-t 6` needs Docker memory 12 GB and CPU 7. `-t 10` needs more.
 
 **Spring Boot repos:**
 ```bash

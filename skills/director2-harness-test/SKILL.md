@@ -10,6 +10,7 @@ description: Runs director2-aws harness tests through the persistent build-conta
 Run a `director2-aws` harness test with the least setup needed, while preserving the persistent container flow that makes repeated local runs practical.
 
 This skill exists for one repeated loop: make sure the build container is usable, rebuild only when necessary, run the requested harness target, and report whether the run passed or failed.
+This skill is only for `director2-aws` harness execution.
 
 ## When to Use
 
@@ -43,6 +44,34 @@ Helpful inputs:
 - Whether Java code or schema files changed
 - Whether the current harness image is known to be stale
 - Whether the developer wants manual or automated buildenv steps
+- How much Docker Desktop memory and CPU are available for choosing `-t`
+
+## Command Shapes
+
+Use `run-harness-sidecar.sh` from the host while the persistent build container stays running.
+
+Common forms:
+
+- single XML test: `./run-harness-sidecar.sh -p -t 1 -j 2048 /dis/test/test-foo.xml`
+- single qualified XML test: `./run-harness-sidecar.sh -p -t 1 -j 2048 platform/test/test-foo.xml`
+- one suite: `./run-harness-sidecar.sh -p -m -t 6 dis`
+- all suites: `./run-harness-sidecar.sh -p -m -t 6 .`
+
+Flag meanings:
+
+- `-t N`: number of parallel harness threads and MySQL sidecars
+- `-j N`: JVM heap for the harness Java process in MB
+- `-p`: use `harness-mysql-preloaded:latest` and skip DB install
+- `-m`: mount tmpfs for MySQL datadir; fastest option, usually paired with `-p`
+
+Thread-count rule:
+
+- choose `-t` based on available Docker Desktop resources, not just desired speed
+- example: `-t 6` needs Docker memory 12 GB and CPU 7
+- `-t 10` needs more Docker memory and CPU than that, so do not use it as a default
+- use `-t 6` as the documented example unless the available Docker resources justify going higher
+- if those resources are not available, lower `-t`
+- when uncertain, start smaller rather than overcommitting Docker
 
 ## Process
 
@@ -88,15 +117,21 @@ Skip rebuild when:
 
 If a rebuild is needed:
 
-1. compile `director2` inside the persistent container
-2. rebuild the harness MySQL image
+1. inside the persistent container, run `./gradlew clean build -PdisableRyuk` from the `director2/` directory to compile `director2`
+2. if the pre-loaded image is stale or missing, rebuild it with `./build-harness-mysql-image.sh`
 
 If no rebuild is needed, do not pay that cost.
 
 ### Step 5: Run the requested harness target
 
-Run the target using `./scripts/runDirHarness.py` inside the persistent container.
+Run the target from the host with `./run-harness-sidecar.sh`.
 
+Default choices:
+
+- single XML test: `-p -t 1 -j 2048`
+- suite runs: prefer `-p -m` and choose `-t` from Docker capacity
+
+Do not call `./scripts/runDirHarness.py` directly unless you are debugging the harness scripts themselves.
 Do not use debug mode unless explicitly asked.
 
 Allowed target shapes:

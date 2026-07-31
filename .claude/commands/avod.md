@@ -58,7 +58,7 @@ Tell the developer what was detected before starting:
 ```
 ✓ Detected: director2-aws (harness)
   Test command: ./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<name>.xml
-  Suite command: ./run-harness-sidecar.sh -p -m -t 10 <module>
+  Suite command: ./run-harness-sidecar.sh -p -m -t 6 <module>
 ```
 or:
 ```
@@ -485,9 +485,12 @@ When the test passes (GREEN), update Step 2 in the roadmap to `done`.
 
 **director2-aws:**
 ```bash
-./run-harness-sidecar.sh -p -m -t 10 <module>
+./run-harness-sidecar.sh -p -m -t 6 <module>
 ```
 
+This harness flow is only for `director2-aws`.
+- Choose `-t` from Docker Desktop resources instead of treating `10` as a default.
+- Example: `-t 6` needs Docker memory 12 GB and CPU 7. `-t 10` needs more.
 **dmedia:**
 ```bash
 ./gradlew test              # unit tests (excludes harness)
@@ -839,7 +842,7 @@ This reference is embedded here so the skill works without any external files.
 - Use SQL fixtures (`.sql` files in the test directory) when no fake-create op exists.
 - If `director2-harness-test` is available, prefer it for the actual harness-run workflow and use the commands below as fallback reference.
 - Run a single test: `./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<name>.xml`
-- Run the full module suite: `./run-harness-sidecar.sh -p -m -t 10 <module>`
+- Run the full module suite: `./run-harness-sidecar.sh -p -m -t 6 <module>`
 
 ### Spring Boot integration testing (other repos)
 
@@ -891,3 +894,5 @@ After completing all six stages, confirm:
 - Suite failures dismissed without checking whether they are pre-existing
 - AVOD checklist item skipped without the developer explicitly acknowledging it
 - Completion report is a template — it does not reflect what actually happened on this specific ticket
+- Choose `-t` from Docker Desktop resources instead of treating `10` as a default.
+- Example: `-t 6` needs Docker memory 12 GB and CPU 7. `-t 10` needs more.

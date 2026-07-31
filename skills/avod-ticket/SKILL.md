@@ -59,7 +59,7 @@ Tell the developer what was detected before starting:
 ```
 ✓ Detected: director2-aws (harness)
   Test command: ./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<name>.xml
-  Suite command: ./run-harness-sidecar.sh -p -m -t 10 <module>
+  Suite command: ./run-harness-sidecar.sh -p -m -t 6 <module>
 ```
 or:
 ```
@@ -534,8 +534,12 @@ When the test passes (GREEN), update Step 2 in the roadmap to `done`.
 
 **director2-aws:**
 ```bash
-./run-harness-sidecar.sh -p -m -t 10 <module>
+./run-harness-sidecar.sh -p -m -t 6 <module>
 ```
+
+This harness flow is only for `director2-aws`.
+Choose `-t` from Docker Desktop resources instead of treating `10` as a default.
+Example: `-t 6` needs Docker memory 12 GB and CPU 7. `-t 10` needs more.
 
 **dmedia:**
 ```bash
@@ -569,7 +573,7 @@ Show the failures with test names and error details, then use AskUserQuestion to
 1. Confirm by checking the test on main/master branch WITHOUT your changes:
    ```bash
    git stash
-   ./run-harness-sidecar.sh -p -m -t 10 <module>
+   ./run-harness-sidecar.sh -p -m -t 6 <module>
    git stash pop
    ```
 2. If the test fails on main too → confirmed pre-existing ✓
@@ -963,7 +967,8 @@ This reference is embedded here so the skill works without any external files.
 - Lock `<now>` to a fixed timestamp when testing time-sensitive behavior.
 - Use SQL fixtures (`.sql` files in the test directory) when no fake-create op exists.
 - Run a single test: `./run-harness-sidecar.sh -p -t 1 -j 2048 /<module>/test/<name>.xml`
-- Run the full module suite: `./run-harness-sidecar.sh -p -m -t 10 <module>`
+- Run the full module suite: `./run-harness-sidecar.sh -p -m -t 6 <module>`
+- Choose `-t` from Docker Desktop resources. Example: `-t 6` needs Docker memory 12 GB and CPU 7. `-t 10` needs more.
 - If `director2-harness-test` is available, prefer it for the actual harness-run workflow and use this section as fallback reference.
 
 **Buildenv and image creation:**
@@ -979,7 +984,7 @@ This reference is embedded here so the skill works without any external files.
 - Stale harness images may cause spurious test failures; rebuild if needed
 
 **Collateral damage patterns:**
-- When implementing a change, the full suite (`./run-harness-sidecar.sh -p -m -t 10 <module>`) may surface failures in unrelated tests
+- When implementing a change, the full suite (`./run-harness-sidecar.sh -p -m -t 6 <module>`) may surface failures in unrelated tests
 - These failures ("collateral damage") happen because:
   - The implementation affected shared state (Redis keys, database schema, mock data setup)
   - The test infrastructure is coupled and one module's change affects another
