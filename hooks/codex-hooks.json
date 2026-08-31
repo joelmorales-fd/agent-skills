@@ -10,6 +10,16 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ROOT=\"${PLUGIN_ROOT:-}\"; if [ -n \"$ROOT\" ] && [ -f \"$ROOT/hooks/codex-workflow-receipts.py\" ]; then python3 \"$ROOT/hooks/codex-workflow-receipts.py\"; else true; fi"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "apply_patch",
@@ -26,6 +36,25 @@
           {
             "type": "command",
             "command": "ROOT=\"${PLUGIN_ROOT:-}\"; if [ -n \"$ROOT\" ] && [ -f \"$ROOT/hooks/codex-check-declaration.sh\" ]; then bash \"$ROOT/hooks/codex-check-declaration.sh\"; else true; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|exec_command|exec|functions.exec_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ROOT=\"${PLUGIN_ROOT:-}\"; if [ -n \"$ROOT\" ] && [ -f \"$ROOT/hooks/codex-workflow-receipts.py\" ]; then python3 \"$ROOT/hooks/codex-workflow-receipts.py\"; else true; fi"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ROOT=\"${PLUGIN_ROOT:-}\"; if [ -n \"$ROOT\" ] && [ -f \"$ROOT/hooks/codex-workflow-receipts.py\" ]; then python3 \"$ROOT/hooks/codex-workflow-receipts.py\"; else true; fi"
           }
         ]
       }

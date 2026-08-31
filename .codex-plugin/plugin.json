@@ -1,7 +1,38 @@
 {
   "name": "agent-skills",
-  "version": "1.0.0",
+  "version": "1.0.0+codex.20260831194031",
   "description": "Production-grade engineering skills for AI coding agents.",
+  "author": {
+    "name": "Addy Osmani",
+    "url": "https://github.com/addyosmani"
+  },
+  "homepage": "https://github.com/addyosmani/agent-skills",
+  "repository": "https://github.com/addyosmani/agent-skills",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "software-engineering",
+    "development-workflow"
+  ],
   "skills": "./skills/",
-  "hooks": "./hooks/codex-hooks.json"
+  "hooks": "./hooks/codex-hooks.json",
+  "interface": {
+    "displayName": "Agent Skills",
+    "shortDescription": "Production engineering workflows for coding agents",
+    "longDescription": "Skills, specialist roles, and lifecycle hooks for specification, implementation, testing, review, and evidence-gated ticket delivery.",
+    "developerName": "Addy Osmani",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Instructions",
+      "Lifecycle hooks",
+      "Local workflow guardrails"
+    ],
+    "websiteURL": "https://github.com/addyosmani/agent-skills",
+    "defaultPrompt": [
+      "Start the Agentic Development Workflow for this ticket.",
+      "Review this code change before merge.",
+      "Design tests for this feature."
+    ],
+    "brandColor": "#111111"
+  }
 }

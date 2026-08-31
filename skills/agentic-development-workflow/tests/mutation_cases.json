@@ -1,0 +1,482 @@
+{
+  "schema": 1,
+  "cases": [
+    {
+      "id": "bundled-template-source",
+      "invariant": "Initialization reads work-item templates only from assets shipped with the skill.",
+      "search": "raw = _read_no_follow(policy[\"template_root\"] / name)",
+      "replacement": "raw = _read_no_follow(Path(\"/non-bundled\") / name)",
+      "tests": [
+        "CliTests.test_init_is_self_contained_and_generates_ticket_runtime_configuration"
+      ]
+    },
+    {
+      "id": "per-ticket-runtime-configuration",
+      "invariant": "Initialization creates the ticket-local runtime configuration snapshot.",
+      "search": "_write_new(item / \".adw\" / \"runtime-configuration.json\", runtime_configuration)",
+      "replacement": "pass  # mutation probe: omit the ticket-local configuration",
+      "tests": [
+        "CliTests.test_init_is_self_contained_and_generates_ticket_runtime_configuration"
+      ]
+    },
+    {
+      "id": "runtime-configuration-genesis-binding",
+      "invariant": "The ticket-local runtime configuration remains bound to the genesis audit event.",
+      "search": "if runtime_configuration.is_symlink() or not runtime_configuration.is_file() or _sha256(_read_no_follow(runtime_configuration)) != expected_configuration:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "InitAndStatusTests.test_status_rejects_tampered_runtime_configuration"
+      ]
+    },
+    {
+      "id": "ticket-first-intake-shape",
+      "invariant": "Only a directory containing one regular, non-reserved ticket-source file may be adopted.",
+      "search": "if (\n        len(entries) != 1 or entries[0].name in set(WORK_ITEM_DOCUMENTS) | {\".adw\", \"artifacts\"}\n        or entries[0].is_symlink() or not entries[0].is_file()\n    ):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "InitAndStatusTests.test_rejects_partial_ticket_directory_without_overwrite"
+      ]
+    },
+    {
+      "id": "generated-package-link-resolution",
+      "invariant": "Links between specification-package documents are valid before atomic publication.",
+      "search": "if not relative.is_absolute() and \"..\" not in relative.parts and len(relative.parts) == 1 and relative.name in documents:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "InitAndStatusTests.test_initializes_an_absent_ticket_directory"
+      ]
+    },
+    {
+      "id": "specification-generic-revision-bypass",
+      "invariant": "A generic revision cannot bypass the complete specification-package gate.",
+      "search": "if domain == \"specification\":",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "RevisionTests.test_generic_revision_command_cannot_bypass_the_specification_package_gate"
+      ]
+    },
+    {
+      "id": "specification-template-completion",
+      "invariant": "An uncompleted specification-package template cannot receive a revision.",
+      "search": "if \"<!-- ADW-TEMPLATE\" in text:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "RevisionTests.test_rejects_a_specification_document_that_is_still_a_template"
+      ]
+    },
+    {
+      "id": "specification-investigation-grounding",
+      "invariant": "Unverified hedge language prevents the investigation from being recorded as complete.",
+      "search": "if re.search(r\"(?i)\\b(probably|i think|likely|should be)\\b\", investigation):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "RevisionTests.test_rejects_unverified_hedge_language_in_the_investigation"
+      ]
+    },
+    {
+      "id": "specification-pre-existing-work-red-strategy",
+      "invariant": "Normal RED-first cannot be approved after ticket implementation or tests already exist.",
+      "search": "if not valid_red_strategy:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "RevisionTests.test_rejects_normal_red_strategy_when_ticket_implementation_already_exists",
+        "RevisionTests.test_rejects_red_strategies_that_do_not_match_the_intake_state"
+      ]
+    },
+    {
+      "id": "prepared-recovery-write-lock-required",
+      "invariant": "A prepared transaction may be rolled back only through its preserved expired write lease.",
+      "search": "if not write_lock_exists and not commit_path.is_file() and not aborted and not _has_preserved_write_lease(transaction, event, current_time):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "RecoveryTests.test_refuses_to_rollback_a_prepared_transaction_when_its_write_lock_is_missing"
+      ]
+    },
+    {
+      "id": "recovery-lock-expired-takeover",
+      "invariant": "Only an explicitly claimed expired recovery lease may be replaced by a new recovery owner.",
+      "search": "if error.kind != \"recovery_required\":",
+      "replacement": "if True:  # mutation probe",
+      "tests": [
+        "RecoveryTests.test_reclaims_an_expired_recovery_lock_before_resuming_prepared_rollback"
+      ]
+    },
+    {
+      "id": "recovery-staged-artifact-path",
+      "invariant": "Recovery verifies an uncommitted artifact without following a substituted journal parent.",
+      "search": "staged = _contained_artifact_target(transaction / \"staged\", name)",
+      "replacement": "staged = transaction / \"staged\" / \"artifacts\" / path.relative_to(\"artifacts\")  # mutation probe",
+      "tests": [
+        "RecoveryTests.test_rejects_a_staged_artifact_parent_substitution_without_rollback"
+      ]
+    },
+    {
+      "id": "recovery-artifact-manifest-shape",
+      "invariant": "A malformed prepared artifact map enters integrity hold without rollback.",
+      "search": "if not isinstance(artifact_hashes, dict) or any(\n            not isinstance(name, str) or not isinstance(digest, str)\n            for name, digest in artifact_hashes.items()\n        ):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "RecoveryTests.test_rejects_a_malformed_prepared_artifact_map_without_rollback"
+      ]
+    },
+    {
+      "id": "recovery-abort-terminal-branch",
+      "invariant": "An aborted transaction is terminal after any matching stale write lease is preserved.",
+      "search": "if commit_path.is_file() or aborted:",
+      "replacement": "if commit_path.is_file():  # mutation probe",
+      "tests": [
+        "RecoveryTests.test_releases_a_matching_expired_write_lock_when_an_abort_is_retried"
+      ]
+    },
+    {
+      "id": "lock-directory-symlink",
+      "invariant": "A lock directory symlink enters integrity hold.",
+      "search": "if lock_path.is_symlink() or not lock_path.is_dir():",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "LeaseLockTests.test_lock_directory_symlink_is_an_integrity_hold"
+      ]
+    },
+    {
+      "id": "stale-claim-work-item-symlink",
+      "invariant": "Stale-lock recovery never follows a symlinked work item.",
+      "search": "if not item.is_absolute() or item.is_symlink() or not item.is_dir():\n            _unsafe(\"stale-lock work item must be an absolute non-symlink directory\")",
+      "replacement": "if False:  # mutation probe\n            _unsafe(\"stale-lock work item must be an absolute non-symlink directory\")",
+      "tests": [
+        "LeaseLockTests.test_stale_claim_rejects_a_symlinked_work_item"
+      ]
+    },
+    {
+      "id": "journal-file-no-follow",
+      "invariant": "A journal file read never follows a substituted symlink.",
+      "search": "descriptor = os.open(str(path), os.O_RDONLY | getattr(os, \"O_NOFOLLOW\", 0))",
+      "replacement": "descriptor = os.open(str(path), os.O_RDONLY)  # mutation probe",
+      "tests": [
+        "TransactionCommitTests.test_idempotent_retry_maps_a_commit_marker_symlink_to_integrity_hold"
+      ]
+    },
+    {
+      "id": "commit-record-time-binding",
+      "invariant": "The immutable commit record time equals the event preparation time.",
+      "search": "if marker.get(\"commit_recorded_at\") != event.get(\"prepared_at\"):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "ConsistentReadTests.test_commit_record_time_must_match_the_prepared_event"
+      ]
+    },
+    {
+      "id": "abort-recovery-hash-binding",
+      "invariant": "An abort recovery event binds the exact immutable abort bytes.",
+      "search": "or recovery.get(\"abort_hash\") != abort_hash",
+      "replacement": "or False  # mutation probe",
+      "tests": [
+        "TransactionCommitTests.test_lease_expiry_before_first_publication_aborts_without_target_change"
+      ]
+    },
+    {
+      "id": "committed-outcome-binding",
+      "invariant": "Only a terminal marker with outcome committed is readable or retryable as committed.",
+      "search": "if marker.get(\"outcome\") != \"committed\":",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "ConsistentReadTests.test_terminal_marker_semantics_cannot_be_rewritten_with_matching_manifest_hash",
+        "TransactionCommitTests.test_idempotent_retry_rejects_a_semantically_tampered_commit_marker"
+      ]
+    },
+    {
+      "id": "pre-replace-full-file-cas",
+      "invariant": "A human edit observed before replacement is never overwritten.",
+      "search": "if _sha256(_read_no_follow(target)) != prepared.manifest[\"targets\"][name][\"before_hash\"]:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "TransactionCommitTests.test_conflict_after_first_replace_rolls_back_without_overwriting_human_edit"
+      ]
+    },
+    {
+      "id": "artifact-parent-symlink",
+      "invariant": "An artifact path cannot traverse a symlinked parent.",
+      "search": "if current.is_symlink() or not current.is_dir():",
+      "replacement": "if not current.is_dir():  # mutation probe",
+      "tests": [
+        "TransactionCommitTests.test_nested_artifact_parent_symlink_cannot_escape_work_item"
+      ]
+    },
+    {
+      "id": "publication-directory-chain-no-follow",
+      "invariant": "Publication opens every directory component without following a substituted ancestor symlink.",
+      "search": "next_descriptor = os.open(part, flags, dir_fd=descriptor)",
+      "replacement": "next_descriptor = os.open(part, flags & ~getattr(os, \"O_NOFOLLOW\", 0), dir_fd=descriptor)  # mutation probe",
+      "tests": [
+        "TransactionCommitTests.test_artifact_parent_substitution_after_validation_cannot_escape_work_item"
+      ]
+    },
+    {
+      "id": "partial-publication-descriptor-cleanup",
+      "invariant": "A failed publication closes every directory descriptor acquired before the failure.",
+      "search": "if target_descriptor >= 0:\n            os.close(target_descriptor)\n        if source_descriptor >= 0:\n            os.close(source_descriptor)\n        if source_parent >= 0:\n            os.close(source_parent)",
+      "replacement": "if target_descriptor >= 0:\n            os.close(target_descriptor)\n        if source_descriptor >= 0:\n            os.close(source_descriptor)\n        if False:  # mutation probe\n            os.close(source_parent)",
+      "tests": [
+        "TransactionCommitTests.test_artifact_parent_substitution_after_validation_cannot_escape_work_item"
+      ]
+    },
+    {
+      "id": "post-link-artifact-rollback-tracking",
+      "invariant": "An artifact is rollback-tracked immediately after its immutable link is published.",
+      "search": "if on_publish:\n            on_publish()",
+      "replacement": "if False:  # mutation probe\n            on_publish()",
+      "tests": [
+        "TransactionCommitTests.test_failure_after_artifact_link_orphans_the_uncommitted_artifact"
+      ]
+    },
+    {
+      "id": "committed-chain-completeness",
+      "invariant": "A committed snapshot contains every sequence from genesis through its current head.",
+      "search": "if set(committed) != set(range(1, final_sequence + 1)):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "TransactionCommitTests.test_commit_rejects_a_base_without_a_complete_committed_chain"
+      ]
+    },
+    {
+      "id": "evidence-host-authority-required",
+      "invariant": "Unverified producer proof cannot append evidence or publish its artifact.",
+      "search": "if not callable(authority_verifier) or authority_verifier(copy.deepcopy(candidate)) is not True:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_unverified_producer_proof_leaves_no_evidence_or_artifact"
+      ]
+    },
+    {
+      "id": "transition-decision-evidence-exists",
+      "invariant": "A gate pointer cannot authorize movement when its decision evidence is absent or ambiguous.",
+      "search": "if len(indexed) != 1:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "TransitionValidationTests.test_rejects_a_gate_pointer_to_missing_evidence"
+      ]
+    },
+    {
+      "id": "transition-token-integrity",
+      "invariant": "A forged movement token is rejected before any state read or write.",
+      "search": "if token_hash != _sha256(canonical_json(supplied)):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "TransitionValidationTests.test_rejects_a_forged_transition_token_before_mutation"
+      ]
+    },
+    {
+      "id": "forward-gate-failed-support",
+      "invariant": "A passing forward decision cannot convert failed or blocked direct proof into a passing gate.",
+      "search": "if gate is not None and support[\"result_status\"] not in {\"pass\", \"not_required\"}:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "TransitionValidationTests.test_forward_gate_cannot_convert_failed_support_to_pass"
+      ]
+    },
+    {
+      "id": "correction-attempt-lineage-budget",
+      "invariant": "A root-cause lineage cannot exceed its configured correction-attempt budget.",
+      "search": "if len(consumed) >= limit:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_correction_attempt_numbers_are_derived_and_exhaust_at_the_configured_limit"
+      ]
+    },
+    {
+      "id": "corrected-review-submission-accounting-required",
+      "invariant": "Corrected work must submit every unsubmitted correction attempt exactly once.",
+      "search": "if corrected and (not unsubmitted or set(correction_attempt_ids) != unsubmitted):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "TransitionValidationTests.test_corrected_tdd_cannot_enter_code_quality_gate_without_submission_accounting"
+      ]
+    },
+    {
+      "id": "review-correction-loop-budget",
+      "invariant": "A corrected TDD submission cannot exceed the configured global review-loop limit.",
+      "search": "if used >= snapshot.state[\"loop_policy\"][\"max_review_correction_loops\"]:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "TransitionValidationTests.test_corrected_tdd_submission_derives_one_global_code_quality_loop"
+      ]
+    },
+    {
+      "id": "lead-decision-gate-ownership",
+      "invariant": "A lead decision can satisfy only a gate owned by the lead role.",
+      "source": "adw_receipts.py",
+      "search": "if requirement is None or requirement[2] != {\"lead_agent\"}:",
+      "replacement": "if requirement is None:  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_lead_cannot_approve_a_judge_owned_quality_gate"
+      ]
+    },
+    {
+      "id": "lead-decision-subcommand-binding",
+      "invariant": "A lead-owned gate decision requires the exact host-observed lead-decision command.",
+      "source": "adw_receipts.py",
+      "search": "or lead.get(\"claim\", {}).get(\"subcommand\") != \"record-lead-decision\"",
+      "replacement": "or False  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_lead_can_record_its_receipt_bound_test_design_gate"
+      ]
+    },
+    {
+      "id": "tdd-lead-decision-red-green-binding",
+      "invariant": "A lead cannot accept TDD without distinct current failing RED and passing GREEN command evidence.",
+      "source": "adw_core.py",
+      "search": "if not valid_red or not valid_green or set(green_ids) & set(red_ids):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_tdd_lead_gate_requires_actual_red_before_green"
+      ]
+    },
+    {
+      "id": "tdd-lead-decision-evidence-order",
+      "invariant": "Recorded RED command evidence must precede the GREEN command evidence used for TDD acceptance.",
+      "source": "adw_core.py",
+      "search": "if max(red_times) >= min(green_times):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_tdd_lead_gate_requires_actual_red_before_green"
+      ]
+    },
+    {
+      "id": "tdd-lead-decision-requires-change-revision",
+      "invariant": "A lead cannot accept TDD before an implementation change revision exists.",
+      "source": "adw_core.py",
+      "search": "if change_revision is None:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_tdd_gate_requires_a_recorded_change_revision"
+      ]
+    },
+    {
+      "id": "tdd-green-evidence-binds-current-change",
+      "invariant": "The GREEN command used to accept TDD must be bound to the current implementation revision.",
+      "source": "adw_core.py",
+      "search": "if any(record.get(\"input_revisions\", {}).get(\"change\") != change_revision for record in green):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_tdd_gate_requires_green_evidence_bound_to_the_recorded_change"
+      ]
+    },
+    {
+      "id": "director2-test-design-container-claim",
+      "invariant": "Director2 test design cannot prescribe an unsupported container user or obsolete build path.",
+      "source": "adw_core.py",
+      "search": "if any(re.search(pattern, text, re.IGNORECASE) for pattern in (",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "RevisionTests.test_director2_test_design_rejects_invented_container_execution_claims"
+      ]
+    },
+    {
+      "id": "tdd-transition-revalidates-red-green-artifacts",
+      "invariant": "TDD transition revalidates the bound RED and GREEN artifacts after the lead decision is recorded.",
+      "search": "if gate == \"tdd_pass\":\n            validate_tdd_evidence_selection(\n                snapshot, work_item,",
+      "replacement": "if False:  # mutation probe\n            validate_tdd_evidence_selection(\n                snapshot, work_item,",
+      "tests": [
+        "EvidenceValidationTests.test_tdd_lead_gate_requires_actual_red_before_green"
+      ]
+    },
+    {
+      "id": "correction-clears-stale-gates",
+      "invariant": "Returning to an earlier state clears gate pointers that could otherwise reuse stale approval or verification evidence.",
+      "search": "state[\"gate_evidence\"][gate] = None",
+      "replacement": "pass  # mutation probe: retain the stale gate pointer",
+      "tests": [
+        "CliTests.test_route_correction_returns_to_specify_and_invalidates_old_approval"
+      ]
+    },
+    {
+      "id": "receipt-integrity-binding",
+      "invariant": "A modified host receipt cannot authorize evidence.",
+      "source": "adw_receipts.py",
+      "search": "if supplied_hash != _sha256(canonical_json(unsigned)):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_host_receipt_round_trip_rejects_tampering"
+      ]
+    },
+    {
+      "id": "receipt-private-permissions",
+      "invariant": "Host receipt material must not be readable by group or other users.",
+      "source": "adw_receipts.py",
+      "search": "if private and stat.S_IMODE(opened.st_mode) & 0o077:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_host_receipt_round_trip_rejects_tampering"
+      ]
+    },
+    {
+      "id": "lead-call-exact-argv-binding",
+      "invariant": "A lead-call receipt authorizes only its exact workflow CLI invocation.",
+      "source": "adw_receipts.py",
+      "search": "and receipt[\"claim\"].get(\"argv_sha256\") == expected_argv",
+      "replacement": "and True  # mutation probe",
+      "tests": [
+        "CliTests.test_public_run_evidence_command_requires_host_call_and_records_actual_result"
+      ]
+    },
+    {
+      "id": "natural-approval-current-snapshot-binding",
+      "invariant": "A simple human approval can authorize only its prepared current specification snapshot.",
+      "source": "adw_receipts.py",
+      "search": "if claim == expected and claim[\"role\"] in {\"developer\", \"ticket_owner\"}:",
+      "replacement": "if claim[\"role\"] in {\"developer\", \"ticket_owner\"}:  # mutation probe",
+      "tests": [
+        "CliTests.test_natural_approval_rejects_a_request_after_the_specification_changes"
+      ]
+    },
+    {
+      "id": "approval-request-host-authority-required",
+      "invariant": "A lead-call receipt alone cannot fabricate the pending human approval context.",
+      "source": "adw_receipts.py",
+      "search": "if len(requests) != 1:",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "CliTests.test_prepare_approval_fails_before_asking_human_without_live_hook"
+      ]
+    },
+    {
+      "id": "record-approval-subcommand-binding",
+      "invariant": "Specification approval requires the exact host-observed record-approval command.",
+      "source": "adw_receipts.py",
+      "search": "or lead.get(\"claim\", {}).get(\"subcommand\") != \"record-approval\"",
+      "replacement": "or False  # mutation probe",
+      "tests": [
+        "CliTests.test_record_approval_requires_the_exact_lead_subcommand"
+      ]
+    },
+    {
+      "id": "absolute-repository-root-binding",
+      "invariant": "An absolute configured repository root permits evidence commands only from that exact canonical root.",
+      "source": "adw_receipts.py",
+      "search": "cwd.resolve(strict=False) == configured_repository.resolve(strict=False)",
+      "replacement": "cwd.name == configured_repository.name  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_actual_command_result_accepts_configured_absolute_repository_root"
+      ]
+    },
+    {
+      "id": "command-actual-exit-status",
+      "invariant": "The real command exit code, not an agent claim, determines pass or fail.",
+      "source": "adw_receipts.py",
+      "search": "\"observed_at\": observed_at, \"result_status\": \"pass\" if completed.returncode in expected_exit_codes else \"fail\",",
+      "replacement": "\"observed_at\": observed_at, \"result_status\": \"pass\",  # mutation probe",
+      "tests": [
+        "EvidenceValidationTests.test_actual_unexpected_exit_is_recorded_as_failure"
+      ]
+    },
+    {
+      "id": "command-secret-output-rejection",
+      "invariant": "Secret-like command output is rejected instead of becoming model-visible evidence.",
+      "source": "adw_core.py",
+      "search": "if SECRET_EVIDENCE_PATTERN.search(artifact_bytes.decode(\"utf-8\", \"replace\")):",
+      "replacement": "if False:  # mutation probe",
+      "tests": [
+        "WorkflowHardeningTests.test_evidence_artifact_rejects_secret_like_material"
+      ]
+    }
+  ]
+}

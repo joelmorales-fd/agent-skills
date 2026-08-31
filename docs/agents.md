@@ -4,6 +4,7 @@ Specialist personas that play a single role with a single perspective. Each pers
 
 | Persona | Role | Best for |
 |---------|------|----------|
+| [development-workflow-lead](../agents/development-workflow-lead.md) | Ticket workflow controller | One evidence-gated ticket from intake through completion |
 | [code-reviewer](../agents/code-reviewer.md) | Senior Staff Engineer | Five-axis review before merge |
 | [security-auditor](../agents/security-auditor.md) | Security Engineer | Vulnerability detection, OWASP-style audit |
 | [test-engineer](../agents/test-engineer.md) | QA Engineer | Test strategy, coverage analysis, Prove-It pattern |
@@ -27,6 +28,7 @@ The user (or a slash command) is the orchestrator. **Personas do not call other 
 Pick this when you want one perspective on the current change and the user is in the loop.
 
 - "Review this PR" → invoke `code-reviewer` directly
+- "Start/continue this workflow ticket" → invoke `development-workflow-lead` directly; the host/user dispatches its bounded specialist assignments
 - "Are there security issues in `auth.ts`?" → invoke `security-auditor` directly
 - "What tests are missing for the checkout flow?" → invoke `test-engineer` directly
 - "Audit Core Web Vitals on the product page" → invoke `web-performance-auditor` directly

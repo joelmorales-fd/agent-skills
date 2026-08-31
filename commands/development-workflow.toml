@@ -1,0 +1,17 @@
+description = "Start or resume one evidence-gated software ticket with the primary agent acting as workflow lead"
+
+prompt = """
+Invoke the agentic-development-workflow skill and follow it exactly.
+
+The primary agent owns the lead role for the entire ticket. It must initialize or resume the canonical work-item directory, monitor state and evidence, delegate only bounded specialist tasks when useful, validate returned artifacts, record valid transitions, and continue the control loop until human input is required, the workflow is BLOCKED, or the ticket is COMPLETE.
+
+Treat the command arguments as the ticket source. The source may be a Jira reference, a local file in any reasonable text format, an existing ticket directory, or pasted ticket content. Do not require a fixed ticket filename or format.
+
+Use the AVOD-style specification-package contract bundled with the workflow skill for investigation depth and document outputs. Do not invoke or modify the legacy avod-ticket skill.
+
+During intake, inspect fresh repository status and the ticket-relevant diff, then record existing implementation/tests and a safe RED strategy before specification approval. Never manufacture RED by reversing the active worktree.
+
+Keep progress human-readable: report the current state, completed evidence, active action, failures and corrective route, blockers, and canonical work-item directory. Do not stop merely because a document or intermediate gate was recorded; continue the lead control loop when the next action is safe and authorized.
+
+Do not write implementation code before the responsible developer or ticket owner approves the immutable specification package. Ask for approval in plain language using the workflow's supported approval preflight; do not require the user to compose receipt JSON.
+"""
