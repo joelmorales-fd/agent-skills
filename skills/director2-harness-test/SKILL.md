@@ -75,7 +75,7 @@ Thread-count rule:
 Resolve the local capability in this order and stop at the first validated option:
 
 1. If `director2-aws-build` exists and is running, reuse it only when it uses the configured local server-build Docker image and mounts the intended `director2-aws` checkout at `/director2-aws`.
-2. If the container does not exist, from the host `director2-aws` checkout invoke the configured `buildenv` alias with no leading `.` or `./` and no image argument. Load it through the configured interactive login profile when the current automation shell does not expand aliases; a failed non-interactive alias lookup does not prove the alias is missing.
+2. If the container does not exist, from the host `director2-aws` checkout invoke the configured `buildenv` alias with no leading `.` or `./` and no image argument. On the configured local machine, `buildenv` is a Bash login alias from `~/.bash_profile`; validate it with `bash -ilc 'type buildenv'`, then invoke it with `bash -ilc 'cd <director2-aws-root> && buildenv'`. A zsh lookup does not test this Bash alias and must not be reported as a blocker.
 3. If the alias cannot be loaded from the configured profile, or the container exists but is stopped or invalid, stop with the exact blocker. Do not invoke the alias target script directly, remove or replace the container, or invent another container path.
 
 These are three separate resources:
@@ -111,7 +111,7 @@ If the target is vague, narrow it before running anything.
 Check whether `director2-aws-build` already exists.
 
 - If it is already running and its image/mount validate, reuse it
-- If it is absent, invoke the configured `buildenv` alias from the host checkout
+- If it is absent, invoke the configured Bash login `buildenv` alias from the host checkout
 - If it exists but is stopped or invalid, stop with the exact blocker
 - Never remove or create this container directly
 
@@ -209,6 +209,7 @@ The workflow is drifting if:
 - It runs outside `director2-aws`
 - It skips `./gradlew clean build -PdisableRyuk`
 - It invokes a buildenv script path instead of the `buildenv` alias
+- It treats a missing zsh alias as evidence that the configured Bash login alias is unavailable
 - `harness-mysql-preloaded:latest` was not recreated for the current run
 - It runs a broad suite when a single targeted test was requested
 - It ends without a concrete next move after a failure

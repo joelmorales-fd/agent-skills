@@ -24,3 +24,12 @@ finding, an answer from the owner. Facts, not interpretation.>
 <Append-only, newest last. **Every** action adds one line here in the same write
 that updates Now / Last observed — never skip it, never rewrite earlier lines.
 One line per action: date — stage — what happened.>
+
+## Completion report
+<Filled only at COMPLETE — the durable delivery handoff, written here in the
+ticket, never left only in the chat. This IS the report to the owner. Cover:
+- **What changed** — the behavior, in the ticket's terms.
+- **Key files** — as `path:line`.
+- **Verification** — each command run and its real result (exit/retVal).
+- **Mutation evidence** — what was mutated and that the tests caught it.
+- **Caveats** — anything that couldn't run, files to keep out of the commit, etc.>

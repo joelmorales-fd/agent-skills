@@ -45,6 +45,10 @@ isn't running — **you forgot you can use the skill.** Stop and use it.
   draft the spec, write the approved test + smallest code, or do mutation
   analysis. Return a result with real evidence. Never judge, transition, or call
   another employee.
+- **Senior Engineer** (employee agent): when a hard engineering problem needs
+  debugging, it root-causes it (reads widely, reproduces, tests hypotheses) and
+  returns the smallest path to continue. The lead **monitors** its work and acts on
+  the diagnosis — the lead never debugs itself.
 
 ## The four stages
 
@@ -187,8 +191,14 @@ Run mutation on the meaningful changed logic through the existing
 survivor, recorded. **Go back to TDD** for a real survivor.
 
 ### COMPLETE
-Specs approved, tests GREEN, judge PASS, mutation clean. Write the evidence
-summary and set `Stage: COMPLETE`. Delivery-ready, not a production-deploy claim.
+Specs approved, tests GREEN, judge PASS, mutation clean. Before you set the
+stage, **write the final recap into `state.md`'s Completion report section** — it
+is the delivery handoff and must live in the ticket, not only in the chat: what
+the change does (in the ticket's terms), key files as `path:line`, the
+verification evidence (each command + its real result), mutation evidence, and
+any caveats. The written recap **is** the report to the owner — "report to owner"
+is never a pending next action. Then set `Stage: COMPLETE` (exactly that — not
+"COMPLETION"). Delivery-ready, not a production-deploy claim.
 
 ### BLOCKED
 Only after you've tried the safe options you have. Record the origin stage and the
@@ -241,6 +251,12 @@ The guard is `scripts/guard.py`:
   remotes, no `git` write commands — the developer owns version control and works
   in the existing checkout. Read-only git (`git diff`, `git status`) for evidence
   is fine. (Not in the MVP.)
+- **When debugging is needed, use a Senior Engineer — don't debug yourself, don't
+  block, don't ask the owner.** A failing test/implementation you can't root-cause,
+  or a confusing/contradictory result, is a **deep-debug assignment**: assign a
+  Senior Engineer subagent to root-cause it and **monitor** its work, then act on
+  the diagnosis. An engineering problem you don't understand is a debug assignment —
+  not a BLOCK and not an owner question. "The lead is stuck" is never the state.
 - **The system starts its own infrastructure — never ask the owner, never block on
   its absence.** An absent `director2-aws-build` container is **normal**: the
   `director2-harness-test` skill **starts it itself** (buildenv) as part of running
