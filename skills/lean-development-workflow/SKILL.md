@@ -103,7 +103,9 @@ One ticket = one directory, four plain files (templates in `assets/templates/`):
 
 During SPECS the spec is collected as the AVOD package — `01-scope.md`,
 `02-investigation.md`, `03-roadmap.md`, `04-code-guide.md` — alongside
-`specification.md`. See the SPECS stage.
+`specification.md`. See the SPECS stage. `04-code-guide.md` **freezes** at approval;
+if TDD needs scope the guide didn't list, the deviation is recorded in
+`05-scope-changes.md` (never by editing the guide). See the TDD stage.
 
 **Start** a ticket by creating the directory with a fresh `state.md` at stage
 `SPECS`. That first write is step 0; then run the loop.
@@ -173,28 +175,66 @@ For other repos, put the exact RED/GREEN commands in `commands.md` and run them
 via the guard. `commands.md` is for simple, self-contained commands — not for the
 multi-step in-docker harness.
 
+**`04-code-guide.md` is the frozen scope — it freezes when the owner approves it,
+and you never edit it during TDD.** Rewriting the guide to bless new scope just
+moves the fence; that is exactly the drift AVOD-458 hit. When implementation needs
+to touch something not on the guide, classify the deviation **by kind, not size**:
+
+- **Contract change → stop, back to SPECS** (owner re-approves, any size). A schema
+  file (`disSchema.xml`, a DB column/field), an API/endpoint or request-response
+  shape, a public method signature others depend on, an event/wire payload, or a
+  **new behavior the ticket didn't ask for** (AVOD-458's backoffice suppression flag
+  was one). A one-line schema field still counts.
+- **Small internal miss → record and proceed.** A forgotten helper/import, a
+  test/fixture tweak, an internal refactor inside the approved call path, or
+  deriving an internal value the approved behavior needs — record it in
+  **`05-scope-changes.md`** (the file, why, checked against the frozen guide + the
+  original ticket) and continue. No percentage — the judge backstops.
+
+Never rewrite the spec or the guide in place to match the implementation. Watch the
+**cascade**: if each fix spawns the next regression to patch (a third entry piling
+into `05-scope-changes.md`), the approach is wrong — stop and reconsider it (a
+Senior Engineer if needed), don't keep patching.
+
 **Exit:** approved scenarios GREEN with real evidence. **Go back to SPECS** if the
-spec was wrong; **stay** for an ordinary failing test/build.
+spec was wrong or the change must exceed the approved code guide on a
+schema/API/contract; **stay** for an ordinary failing test/build.
 
 ### JUDGE
 Assign the review to the **judge** (independent — a fresh context that never saw
-your conclusions). It reviews the diff and the tests against the spec, confirming
-the code is correct and the tests genuinely prove the behavior (not code-and-test
-written to agree), writes its report to `code-review.md`, and returns pass/fail with
-findings. On a re-review it gets the prior findings to confirm they're fixed.
+your conclusions). Give it the diff, the tests + their RED/GREEN results, the
+approved spec, the **frozen `04-code-guide.md`**, any **`05-scope-changes.md`**,
+**and the original ticket** (the request as first given). Scope is a **mechanical
+check**: every changed file must be in the frozen guide or recorded in
+`05-scope-changes.md`, and `05-scope-changes.md` must hold **no contract change**
+(schema/API/signature/payload/new behavior) — a file in neither, or a contract
+change recorded as accepted instead of routed back to SPECS, is a **blocking**
+finding. It also confirms the code is correct and the tests genuinely prove the
+behavior (not code-and-test written to agree). It writes its report to
+`code-review.md` and returns pass/fail with findings. On a re-review it gets the
+prior findings to confirm they're fixed.
 **Exit:** PASS with no blocking finding. **Go back to TDD** for any blocking
 finding. The judge never fixes code, runs environments, or writes `state.md`.
 
 ### MUTATION
-Run mutation on the meaningful changed logic through the existing
-`mutation-test-check` skill and classify survivors. **Exit:** no meaningful
-survivor, recorded. **Go back to TDD** for a real survivor.
+Mutate the meaningful changed logic and classify survivors. **Mutation is a
+technique, not a tool** — you can always do it by hand: alter or disable the
+changed logic, confirm a test fails, then revert. A tool only *automates* the same
+technique, so **don't hunt for one and don't add one**; use the `mutation-test-check`
+skill only where the repo already has tooling (director2-aws has no PIT config —
+mutate by hand, as the AVOD-458 run did). **Exit:** no meaningful survivor,
+recorded. **Go back to TDD** for a real survivor.
 
 ### COMPLETE
 Specs approved, tests GREEN, judge PASS, mutation clean. Before you set the
 stage, **write the final recap into `state.md`'s Completion report section** — it
 is the delivery handoff and must live in the ticket, not only in the chat: what
-the change does (in the ticket's terms), key files as `path:line`, the
+the change does (in the ticket's terms), key files as `path:line`, a **scope
+summary** (files approved in the frozen `04-code-guide.md` vs files shipped, plus
+each `05-scope-changes.md` deviation, so the owner sees the final blast radius vs
+what they approved), a **scenario coverage** trace (every `specification.md`
+scenario → the test that exercises it → its GREEN evidence, so the record proves
+the scenarios were actually used), the
 verification evidence (each command + its real result), mutation evidence, and
 any caveats. The written recap **is** the report to the owner — "report to owner"
 is never a pending next action. Then set `Stage: COMPLETE` (exactly that — not
@@ -232,6 +272,14 @@ The guard is `scripts/guard.py`:
 - Read `state.md` before acting; write it after every action.
 - No code before the owner approves `specification.md`; after approval, lead to
   the end without asking the owner to continue.
+- **`04-code-guide.md` is frozen at approval — never edit it during TDD, never
+  rewrite the spec to match the implementation.** Scope grows only two ways: a
+  **contract change** (schema/API/signature/payload/new behavior) routes **back to
+  SPECS** for owner re-approval, any size (carry the original ticket, why scope must
+  grow, and the approach question); a **small internal miss** is recorded in
+  **`05-scope-changes.md`** and proceeds. Editing the guide to bless new scope moves
+  the fence — that is the drift. A change that keeps cascading is a wrong-approach
+  signal — reconsider, don't keep patching.
 - Delegate production work; never author spec/code/tests or judge the work
   yourself.
 - Evidence is a real command result or a real judge review — never "looks good".
@@ -242,7 +290,8 @@ The guard is `scripts/guard.py`:
 - After 5 attempts on the same stable problem, enter BLOCKED rather than looping.
 - Never put a secret in any ticket file, prompt, or argument.
 - Every `state.md` write **appends one History line** (append-only, one per
-  action). Updating `Last observed` without adding a History line is a bug.
+  action), formatted exactly `YYYY-MM-DD HH:MM — STAGE — what` (time to the minute,
+  no seconds). Updating `Last observed` without adding a History line is a bug.
 - **Do not manipulate Docker images.** No `docker tag`/retag, no substituting a
   retained image. Image (re)building is `director2-harness-test`'s job (the image
   reflects the fresh gradle build). A broken image or bootstrap failure is a
