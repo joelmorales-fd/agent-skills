@@ -24,7 +24,9 @@ finding, an answer from the owner. Facts, not interpretation.>
 <Append-only, newest last. **Every** action adds one line here in the same write
 that updates Now / Last observed — never skip it, never rewrite earlier lines.
 One line per action, exactly: `YYYY-MM-DD HH:MM — STAGE — what happened` — time to
-the minute (no seconds).>
+the minute (no seconds). When a result changed files, the line names **what
+changed** (files, and any changed test expectation) from the diff the lead read —
+not just "GREEN" — so the record shows what actually happened.>
 
 ## Completion report
 <Filled only at COMPLETE — the durable delivery handoff, written here in the

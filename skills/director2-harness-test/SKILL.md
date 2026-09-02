@@ -82,13 +82,13 @@ These are three separate resources:
 
 - **Server-build Docker image:** must already exist locally. This workflow never builds, pulls, publishes, or replaces it.
 - **`director2-aws-build` container:** if absent, create it only through the `buildenv` alias. The machine's buildenv configuration selects the existing server-build image; the caller does not pass an image reference. Never invoke the target script directly or create the container with `docker run`.
-- **`harness-mysql-preloaded:latest` image:** after the Director2 clean build succeeds, always recreate it from the host `director2/` directory with `./build-harness-mysql-image.sh`. This local builder creates the native ARM64 image required by the Apple Silicon sidecar runner.
+- **`harness-mysql-preloaded:latest` image:** build it **once at the start of a ticket's run** from the host `director2/` directory with `./build-harness-mysql-image.sh`, then **reuse it for every later step**. The image holds the MySQL dbschema + seed data, which do **not** change between RED, GREEN, and mutation runs of the same ticket — only the gradle code build repeats per change. So recreate it only when it is **absent** or when the ticket's change touches the **DB schema/seed** (`disSchema.xml`/dbschema — itself a contract change that routes back to SPECS). This local builder creates the native ARM64 image required by the Apple Silicon sidecar runner.
 
 Before a run, validate Docker capacity, the selected image, the container mount, and `/director2-aws/director2` inside the container. The documented `-t 6` suite example requires at least 12 GB Docker memory and 7 CPUs; reduce concurrency when the validated capacity is lower.
 
 Before starting the clean build, use a bounded request from inside the build container to confirm `nexus3.mgo.com` is reachable. The harness-image builder requires its dbschema metadata; if Nexus is unavailable, report the VPN/network blocker instead of compiling or reusing an old harness image.
 
-Compile from `/director2-aws/director2` with `./gradlew clean build -PdisableRyuk`, always recreate the harness image, and then run the sidecar command from the host checkout. Monitor `main.log`, every `harness_*.log`, and sidecar state until a terminal result or configured no-progress timeout; repeated bootstrap lines alone are not proof that work is advancing.
+Compile from `/director2-aws/director2` with `./gradlew clean build -PdisableRyuk`, build the harness image only if it is absent or the schema changed (otherwise reuse the existing one), and then run the sidecar command from the host checkout. Monitor `main.log`, every `harness_*.log`, and sidecar state until a terminal result or configured no-progress timeout; repeated bootstrap lines alone are not proof that work is advancing.
 
 Record the selected non-secret option, validation results, exact commands, and resulting logs in the ticket-local configuration revision and evidence. Never store machine configuration in the documentation repository and never hand-edit workflow-owned `.adw` files.
 
@@ -123,9 +123,16 @@ Before continuing, confirm Nexus is reachable from inside the container with a b
 
 Inside the persistent container, always run `./gradlew clean build -PdisableRyuk` from the `director2/` directory.
 
-### Step 4: Recreate the harness image
+### Step 4: Build the harness image once, then reuse it
 
-After the clean build succeeds, always run `./build-harness-mysql-image.sh` from the host `director2/` directory to create the native ARM64 `harness-mysql-preloaded:latest` image.
+Build `harness-mysql-preloaded:latest` **once at the start of the ticket's run** with `./build-harness-mysql-image.sh` from the host `director2/` directory (native ARM64), then **reuse it for every later step**. The preloaded MySQL dbschema + seed data do not change between RED, GREEN, and mutation runs — only the gradle code build repeats — so rebuilding it each time is wasted minutes.
+
+Recreate it only when:
+
+- the image is **absent** (first run of the ticket, or it was removed), or
+- the ticket's change touches the **DB schema/seed** (`disSchema.xml`/dbschema) — which is a contract change that routes back to SPECS anyway.
+
+If `harness-mysql-preloaded:latest` already exists and neither trigger applies, skip the rebuild and reuse it.
 
 ### Step 5: Run the requested harness target
 
@@ -179,7 +186,7 @@ Use this output every time:
 [reused | created]
 
 ## Build Preparation
-[clean build result and harness image creation result]
+[clean build result; harness image: built | reused]
 
 ## Command Run
 [exact harness command]
@@ -198,7 +205,8 @@ Passed | Failed | Needs rerun
 ## Common Rationalizations
 
 - "The prior clean build is recent enough"
-- "Recreate the preloaded harness image only after a harness failure"
+- "Rebuild the preloaded harness image every run to be safe" (it doesn't change between RED/GREEN/mutation — reuse it; rebuild only when absent or the schema changed)
+- "This ticket changed the schema but the old preloaded image is probably fine" (a schema/seed change requires a rebuild — and routes back to SPECS)
 - "Run the full suite first even when one single failing XML test is enough"
 - "A failed harness run automatically means the implementation is wrong"
 
@@ -210,7 +218,8 @@ The workflow is drifting if:
 - It skips `./gradlew clean build -PdisableRyuk`
 - It invokes a buildenv script path instead of the `buildenv` alias
 - It treats a missing zsh alias as evidence that the configured Bash login alias is unavailable
-- `harness-mysql-preloaded:latest` was not recreated for the current run
+- It rebuilds `harness-mysql-preloaded:latest` when it already exists and the schema didn't change (wasted minutes — reuse it)
+- It reuses an existing `harness-mysql-preloaded:latest` after the ticket changed the DB schema/seed (stale image)
 - It runs a broad suite when a single targeted test was requested
 - It ends without a concrete next move after a failure
 
@@ -218,5 +227,5 @@ The workflow is drifting if:
 
 - Confirm the target is explicit and valid
 - Confirm the container state is reported
-- Confirm the clean build passed and the harness image was recreated
+- Confirm the clean build passed and the harness image is present (built this run if absent/schema-changed, otherwise reused)
 - Confirm the output includes the command run, result, and one next move

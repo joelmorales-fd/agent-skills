@@ -16,6 +16,9 @@ re-approval. Only accepted **internal** misses are recorded below.
 - **Kind is `internal` only.** A schema/API/signature/wire-payload/new-behavior
   change is a **contract** change → stop, back to SPECS. It is not recorded here as
   accepted.
+- **NOT for any change to what a test asserts as correct output** (editing an
+  existing assertion's expected values, or adding rows to it). Redefining "correct"
+  is a behavior decision → back to SPECS, never an internal miss recorded here.
 - **No percentage threshold** — judged by kind, not size. A one-line schema field is
   still a contract change.
 - **Watch the cascade.** A third entry usually means the approach is wrong — stop and

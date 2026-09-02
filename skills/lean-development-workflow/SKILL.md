@@ -33,11 +33,15 @@ isn't running — **you forgot you can use the skill.** Stop and use it.
 ## The organization
 
 - **Owner** (the human): gives the ticket, answers real questions, **approves the
-  spec**, resolves blockers, has final say. Not the lead.
+  spec**, resolves blockers, has final say on business/spec questions. Not the lead.
 - **Lead** (you): manage the process — decide the next step, assign bounded work,
   validate results, gather real evidence via approved commands, record `state.md`,
   transition stages, keep the owner informed. Never write the spec/code/tests or
-  judge the work.
+  judge the work. **You are the final approver of "done":** the owner approves the
+  spec once; from there *you* own the completion call. COMPLETE is a deliberate
+  sign-off you make on evidence you verified yourself (you read every diff, you
+  confirmed the judge PASS is genuine and mutation is real) — never a rubber stamp on
+  a "GREEN" you didn't inspect. If you can't stand behind the evidence, it isn't done.
 - **Judge** (an employee agent): independently reviews the finished code **and**
   its tests; returns pass/fail with findings; writes `code-review.md`. Never fixes
   code, runs environments, or transitions state.
@@ -117,13 +121,24 @@ if TDD needs scope the guide didn't list, the deviation is recorded in
 2. DECIDE  the single smallest next action (you manage; you don't produce artifacts).
 3. DO      assign one bounded task to an employee, OR run one approved command
            for evidence, OR request the judge, OR route a correction.
-4. JUDGE   the real result — advance / stay / go back / block.
+4. JUDGE   the real result — read the actual DIFF, not the employee's summary
+           (see below) — advance / stay / go back / block.
 5. WRITE   the outcome + next action into state.md, AND append one History line
-           (every action — never update Last observed without appending History).
+           naming WHAT CHANGED (files, and any changed test expectation) — never
+           update Last observed without appending History.
 6. LOOP    back to 1 — in the same turn.
 ```
 
 Resuming is the same loop from step 1: trust only what `state.md` records as done.
+
+**The lead knows everything, because it reads everything.** When an employee
+returns a result that changed files, you do **not** accept its summary — you read
+the real **diff** of what it touched (read-only `git diff`) and know exactly which
+files changed and what each change did. The summary is the employee's *claim*; the
+diff is the *evidence*, and you accept only the diff. Record what actually changed
+in the History line, so `state.md` shows what happened — not just "GREEN". You
+cannot control or monitor what you never looked at; a GREEN you didn't inspect is
+not evidence. **In particular, watch for a changed test expectation** — see TDD.
 
 **Stop only for:** spec approval (once), a genuine blocker (record the exact
 missing thing), or COMPLETE.
@@ -191,6 +206,26 @@ to touch something not on the guide, classify the deviation **by kind, not size*
   **`05-scope-changes.md`** (the file, why, checked against the frozen guide + the
   original ticket) and continue. No percentage — the judge backstops.
 
+**"Correct output" is frozen at SPECS; TDD may not redefine it.** RED means *adding*
+a failing test for the new behavior and leaving the existing assertions' expected
+values alone. **Changing what an existing test asserts as correct output — including
+adding rows to an existing assertion — is never a small internal miss and never goes
+in `05-scope-changes.md`; it is a behavior decision → back to SPECS** (the owner
+confirms the new expectation is intended). Two tells, both SPECS triggers, not
+patches:
+- Making the added test pass requires **editing an existing assertion's expected
+  output**. (AVOD-season-dedup: the run changed the episode assertion from two rows
+  to three — adding an exact-duplicate row — to absorb a side effect, then filed it
+  as an "internal test-expectation correction". That blesses the very defect the
+  ticket exists to remove.)
+- A fixture you add for the in-scope path makes an **out-of-scope sibling path's
+  assertion fail** — you've found the same defect in another path; the scope or the
+  fix is incomplete. Route to SPECS; do **not** edit that assertion to match its
+  current (buggy) output.
+
+This is why the lead reads the diff (see the control loop): an unauthorized
+expectation change is invisible in a "GREEN" summary and obvious in the diff.
+
 Never rewrite the spec or the guide in place to match the implementation. Watch the
 **cascade**: if each fix spawns the next regression to patch (a third entry piling
 into `05-scope-changes.md`), the approach is wrong — stop and reconsider it (a
@@ -209,8 +244,19 @@ check**: every changed file must be in the frozen guide or recorded in
 `05-scope-changes.md`, and `05-scope-changes.md` must hold **no contract change**
 (schema/API/signature/payload/new behavior) — a file in neither, or a contract
 change recorded as accepted instead of routed back to SPECS, is a **blocking**
-finding. It also confirms the code is correct and the tests genuinely prove the
-behavior (not code-and-test written to agree). It writes its report to
+finding. **Scenario coverage is also a mechanical check:** every
+`specification.md` scenario must map to a **real test with GREEN evidence** — a
+scenario "covered" only by a code-path argument (no test) is a **blocking**
+finding, unless the owner explicitly waived it in the approved spec. A
+negative/absence scenario counts (it's usually a fixture + assert-zero, not an
+exception). **Frozen expectations are also a mechanical check:** in the diff, no
+**pre-existing** test case's expected output may change (including added rows to an
+existing assertion) unless the **approved spec authorizes that change** — an
+unauthorized expectation change is a **blocking** finding (route to SPECS), because
+it redefines "correct" to match the code instead of proving the code. Adding a new
+test case or new fixture rows is normal RED; *modifying what an existing case
+asserts* is the tell. It also confirms the code is correct and the tests genuinely
+prove the behavior (not code-and-test written to agree). It writes its report to
 `code-review.md` and returns pass/fail with findings. On a re-review it gets the
 prior findings to confirm they're fixed.
 **Exit:** PASS with no blocking finding. **Go back to TDD** for any blocking
@@ -226,7 +272,13 @@ mutate by hand, as the AVOD-458 run did). **Exit:** no meaningful survivor,
 recorded. **Go back to TDD** for a real survivor.
 
 ### COMPLETE
-Specs approved, tests GREEN, judge PASS, mutation clean. Before you set the
+**This is your final approval — the leader's sign-off, not an automatic
+transition.** Specs approved, tests GREEN, judge PASS, mutation clean are the
+*inputs*; setting COMPLETE is *your deliberate decision* that the work is done,
+made on evidence you verified yourself: you read the diff of what shipped, you
+confirmed the judge's PASS is genuine (not a blocked/transcribed review), and the
+mutation kill is real. If any of that is a claim you didn't inspect, it is not done
+— go back and verify before you approve. Before you set the
 stage, **write the final recap into `state.md`'s Completion report section** — it
 is the delivery handoff and must live in the ticket, not only in the chat: what
 the change does (in the ticket's terms), key files as `path:line`, a **scope
@@ -272,6 +324,15 @@ The guard is `scripts/guard.py`:
 - Read `state.md` before acting; write it after every action.
 - No code before the owner approves `specification.md`; after approval, lead to
   the end without asking the owner to continue.
+- **You are the final approver.** The owner approves the spec once; from there you
+  own the "done" call. COMPLETE is your deliberate sign-off on evidence you verified
+  yourself — never a rubber-stamp on green inputs you didn't inspect.
+- **Accept the diff, not the summary.** Read what every returned result actually
+  changed (read-only `git diff`) and record it in the History line — a GREEN you
+  didn't inspect is not evidence; you cannot monitor what you never looked at. A
+  changed **pre-existing test expectation** (or a fixture that makes an out-of-scope
+  path fail) is never an internal miss — it redefines "correct" → back to SPECS,
+  never `05-scope-changes.md`.
 - **`04-code-guide.md` is frozen at approval — never edit it during TDD, never
   rewrite the spec to match the implementation.** Scope grows only two ways: a
   **contract change** (schema/API/signature/payload/new behavior) routes **back to
@@ -285,9 +346,31 @@ The guard is `scripts/guard.py`:
 - Evidence is a real command result or a real judge review — never "looks good".
 - Run only `commands.md` entries; never invent one.
 - The judge writes `code-review.md`; the lead writes `state.md`; the guard writes
-  neither.
+  neither. **The lead's hand never touches `code-review.md`.** If the judge's write
+  is blocked (e.g. the declaration doesn't list `code-review.md` as writable), that
+  is a **setup gap to fix** — add `code-review.md` to the run's writable set and let
+  the judge write it — **never** transcribe the judge's output yourself. A
+  lead-transcribed review is not an independent review; a blocked judge write that
+  can't be granted is a BLOCKED, not a transcription.
 - One active state-changing assignment at a time.
 - After 5 attempts on the same stable problem, enter BLOCKED rather than looping.
+- **A stalled specialist is a failed delegation, never a licence to self-author.**
+  When an employee returns nothing, re-issue the same bounded assignment to a fresh
+  specialist. **Distinguish why it stalled — the two do not count the same:**
+  - **Transient infra / interruption** (VPN drop, Nexus/Ryuk flake, buildenv
+    container death, client disconnect, timeout) — **retry freely; it does not burn
+    the 5-cap.** It is not a "stable problem"; nothing was learned and nothing was
+    tried. If the same infra failure keeps recurring, that is a Senior Engineer
+    diagnosis (why the environment won't hold), not a spent attempt budget.
+  - **Substantive failure** (the employee tried and the result is wrong, empty, or
+    unworkable) — **counts as one attempt** on the same 5-cap. At the cap, enter
+    **BLOCKED** recording the exact assignment that won't complete.
+
+  Either way, **you never write the production spec/code/tests yourself to route
+  around a stall** — that is the AVOD-458 break (the lead "applied the correction
+  directly" when specialists stalled). Same principle as the judge's
+  `code-review.md`: the lead never substitutes itself for a blocked or stalled
+  employee.
 - Never put a secret in any ticket file, prompt, or argument.
 - Every `state.md` write **appends one History line** (append-only, one per
   action), formatted exactly `YYYY-MM-DD HH:MM — STAGE — what` (time to the minute,
