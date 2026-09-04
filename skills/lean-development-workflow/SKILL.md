@@ -256,7 +256,23 @@ unauthorized expectation change is a **blocking** finding (route to SPECS), beca
 it redefines "correct" to match the code instead of proving the code. Adding a new
 test case or new fixture rows is normal RED; *modifying what an existing case
 asserts* is the tell. It also confirms the code is correct and the tests genuinely
-prove the behavior (not code-and-test written to agree). It writes its report to
+prove the behavior (not code-and-test written to agree).
+
+**Security — an explicit, named section of the review, not an afterthought.** On the
+same diff the judge also checks, highest priority first: (1) **weakened/removed
+control** — any changed or removed line that drops an existing authz check, input
+validation, access filter, or output encoding the **approved spec didn't authorize**
+removing (the security cousin of an unauthorized expectation change) → **blocking**;
+(2) **injection / unsafe pattern** introduced by the diff (string-concatenated SQL,
+`Runtime.exec`/`ProcessBuilder` from variables, path traversal, unsafe
+deserialization) → **blocking**; (3) **hardcoded secret** inlined in shipped code →
+**blocking**. Use the `security-and-hardening` and `resource-leak-detection` skills
+for patterns (their principles are language-general — apply the Java form for
+director2-aws). A dependency the diff *adds* is a contract change → **SPECS** (the
+scope fence already catches it). Record security findings under their own heading in
+`code-review.md`.
+
+It writes its report to
 `code-review.md` and returns pass/fail with findings. On a re-review it gets the
 prior findings to confirm they're fixed.
 **Exit:** PASS with no blocking finding. **Go back to TDD** for any blocking
