@@ -9,9 +9,9 @@ description: Deploys a completed director2-aws change into the shared docker-dir
 
 This skill exists for one repeated loop: configure docker-director2 for the
 change under test, bring the shared lower env up, and confirm it's healthy.
-**Four sequential mechanical steps** — build the image, write a config file,
-then call the same scripts directly. It manages the deployment environment
-only.
+**Three sequential mechanical steps** — write a config file, then call the
+same scripts directly. It manages the deployment environment only; it
+takes an already-built image as given and never builds one itself.
 
 ## When to Use
 
@@ -48,30 +48,14 @@ this skill — this skill takes them as given, it never derives them itself:
 
 Run from `docker-director2/configurations/`.
 
-### Step 0: BUILD — always rebuild the image
-
-Always run this — never skip it based on whether an image tag already
-exists. An existing `<basename>:latest` tag proves nothing about whether it
-matches the current code; only a fresh build does. Gradle only recompiles
-changed source and `docker buildx build` reuses cached layers, so rerunning
-this every time is cheap.
-
-Run inside `director2-aws-build` (the same buildenv container
-`director2-harness-test` already brings up), from `/director2-aws/director2`:
-
-```
-./gradlew buildDockerImageLocally
-```
-
-This builds every service's image in one run — there's no per-service
-target.
-
 ### Step 1: CONFIG — write `environments.env`
 
-Run `scripts/set-config.py` from `configurations/`:
+Run this skill's own `set-config.py` (it lives in this skill's `scripts/`
+directory, not in the `docker-director2` checkout) from
+`docker-director2/configurations/`, so it finds `environments.env` there:
 
 ```
-./scripts/set-config.py --director-version local|latest \
+python3 <path-to-this-skill>/scripts/set-config.py --director-version local|latest \
   --services <CSV of services the scenario needs> \
   --db-deploy-type <AWS, or CSV of specific service DBs>
 ```
@@ -103,8 +87,32 @@ Run `./local-up.sh` from `configurations/`.
 Run `docker compose ps --format json` and classify each service the same way
 `fah_helpers.py`'s `health_status()` does: any of `unhealthy`/`exited`/
 `dead`/`stopped` in the state/health text → **down**; `healthy` → up; else
-`running` counts as up. Poll until every service in `DEPLOY_TYPE` is up, then
-report — this skill's job ends here.
+`running` counts as up — **except** the DB containers below, where `running`
+alone is not enough.
+
+**DB containers in `DB_DEPLOY_TYPE`** (`dirdb-main`=router,
+`dirdb-data1`=data1, `dirdb-data2`=data2, `dirdb-cis`=CIS,
+`dirdb-avod1`=avod1): the stock `mysql:8.0` image reports `running` the
+moment bootstrap starts, before it accepts connections — `docker compose ps`
+alone is a false positive on fresh volumes. For each such container, run
+this exact command yourself and check its exit code:
+
+```
+docker exec <container> bash -c 'exec 3<>/dev/tcp/127.0.0.1/3306'
+```
+
+- Exit code `0` → that DB is ready.
+- Nonzero → not ready yet. Wait, then run the same command again. Keep
+  doing this — no short fixed timeout — reporting which DB(s) are still
+  initializing and elapsed time each round, never a silent wait.
+- Escalate to **down** only if `docker compose ps` shows `exited`/`dead`
+  for that container, or the wait runs far past any bootstrap seen in this
+  env.
+
+`AWS` DB entries start no local container and skip this probe entirely.
+
+Poll until every service in `DEPLOY_TYPE` is up, then report — this skill's
+job ends here.
 
 ## Output Format
 
@@ -112,9 +120,6 @@ Use this output every time:
 
 ```md
 # Docker Director2 Deploy
-
-## Build
-[gradle buildDockerImageLocally: result]
 
 ## Config
 [DB_DEPLOY_TYPE used; which service set to local]
@@ -136,7 +141,11 @@ Use this output every time:
   deploy, a container restart).
 - "Rebuild `harness-mysql-preloaded` every run to be safe" — that's the
   harness skill's concern, not this one; `harness-mysql-preloaded` is a test
-  fixture, unrelated to this skill's BUILD step.
+  fixture, unrelated to this skill.
+- "The image is missing or stale, build/rebuild it here" — no; this skill
+  never builds an image. If `--director-version local` doesn't reflect the
+  current change, that's the SRE's BUILD step (in `lean-scenario-acceptance`
+  DEPLOY, before this skill is called), not something to fix here.
 - "DB_DEPLOY_TYPE=AWS is always safe, just default to it" — no; use exactly
   what the caller passed in. A scenario that mutates needs LOCAL DBs (AWS is
   READONLY and the runner blocks the write).
@@ -145,10 +154,7 @@ Use this output every time:
 
 ## Red Flags
 
-- It skips Step 0 (BUILD) or treats an existing image tag as good enough
-  without rebuilding
-- It retags or pushes an image instead of running `buildDockerImageLocally`
-  as-is
+- It builds, rebuilds, retags, or pushes an image — never this skill's job
 - It treats a VPN-down failure as a reason to invent a workaround instead of
   reporting the blocker
 - It reports healthy before every `DEPLOY_TYPE` service actually is
@@ -157,8 +163,6 @@ Use this output every time:
 
 ## Verification
 
-- Confirm Step 0 (BUILD) actually ran `buildDockerImageLocally` before
-  CONFIG — never skipped on the assumption an existing image is current
 - Confirm `environments.env` was written with the correct `DB_DEPLOY_TYPE`
   and the correct service set to `local`
 - Confirm HEALTH re-polled and every `DEPLOY_TYPE` service was up before
