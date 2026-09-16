@@ -21,6 +21,8 @@ invent a fixture, choose data setup, or deploy the environment.
 Open all of the following before reaching a verdict:
 
 1. The accepted ticket specification and relevant investigation/code-guide.
+   Also read the Lead's coverage ledger and direct Loop 1 GREEN evidence cited
+   for any **LOOP 1 HARNESS** behavior.
 2. The scenario YAML under review.
 3. `scenarios/AUTHORING.md`, `scenarios/DESIGN.md`, and `scenarios/README.md`.
 4. The closest applicable scenario anywhere under `scenarios/`, including
@@ -56,7 +58,7 @@ incomplete-table defect and returns to SCENARIOS.
 
 | Gate | Verify from evidence | Reject when |
 |---|---|---|
-| Ticket coverage | Every Given/When/Then maps to a tight YAML assertion | A behavior is omitted, weakly asserted, or replaced without an approved spec change |
+| Ticket coverage | Every **LIVE** Given/When/Then maps to a tight YAML assertion; every **LOOP 1 HARNESS** behavior cites direct GREEN evidence for its exact approved contract | A behavior is unaccounted for, weakly asserted, or assigned to harness without exact GREEN evidence and a runner control unavailable live |
 | Scenario form | Step kinds and request/query shapes follow a documented or existing pattern | A step or request shape is invented |
 | Data readiness | Independently trace the complete request → async worker → source build → materialization → asserted-output path. For every stage, inspect the query and its consumer; verify every mandatory joined/referenced row and every returned field consumed without fallback maps to YAML setup and a precondition traversing the same relationship. Use schema DDL for legal row shape and production code/fixtures for required relationships and values. | Review stops at changed code; data is assumed; setup omits any downstream dependency or consumed field; a value lacks a derivation; or the precondition checks only primary-table counts while the real route has additional requirements |
 | Mutation safety | Every mutation/cleanup has source-backed ownership and lifecycle evidence | A scenario deletes, resets, or restores data because it seems prudent |
@@ -72,6 +74,18 @@ row exists separately is insufficient and must be returned to SCENARIOS.
 For `contentSearch`, both `--services` and `DB_DEPLOY_TYPE` must include
 `router,data1,data2`.
 
+An always-run teardown is not by itself a runner blocker. First check whether
+each cleanup SQL can require an exact persisted ownership marker with
+`WHERE`/`EXISTS` or a same-database join. The marker must identify the specific
+row being deleted, survive until its dependents are removed, and be deleted
+last. Return unconditional fixed-ID cleanup to SCENARIOS for this repair. If a
+required target has no marker or relationship that SQL can verify, identify
+that exact target in the **RETURN TO SCENARIOS** verdict.
+When the runner accepts arbitrary cleanup SQL, the next action is the
+Engineer's YAML repair—not a runner change, human approval, disposable
+database, or BLOCKED status. Independently derive this result; do not repeat a
+prior state document's blocker claim.
+
 ## Verdict
 
 Return one of:
@@ -83,7 +97,9 @@ Return one of:
   the Engineer for investigation rather than asking the user to design the
   fixture. Do not propose invented data or a speculative repair.
 - **RETURN TO SPECS** — the ticket behavior itself is ambiguous or the YAML
-  would need to replace an approved requirement.
+  would need to replace an approved requirement. A clear behavior already
+  proved by exact Loop 1 GREEN harness evidence does not return to SPECS merely
+  because the live runner lacks that harness control.
 
 Schema validation alone never produces **ACCEPTED FOR DEPLOY**.
 
@@ -122,6 +138,7 @@ permission to rewrite scenario assumptions during validation.
 
 ## Verification
 
-- Every review gate has direct evidence.
+- Every review gate has direct evidence, including the coverage ledger's exact
+  Loop 1 GREEN evidence for any **LOOP 1 HARNESS** behavior.
 - The schema command validated the exact YAML path.
 - The verdict identifies the accepted path or the precise back-routing gap.

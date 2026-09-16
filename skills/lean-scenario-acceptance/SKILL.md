@@ -14,35 +14,65 @@ mechanism (the runner); `acceptance` names the purpose (QA in a live env).
 
 ## You can call other skills — and you must
 
-In SCENARIOS, the Engineer must invoke **`scenario-runner-authoring`** to write
-the YAML and its evidence-backed data contract. Then call
-**`scenario-runner-validation`** before DEPLOY. It independently accepts or
-returns the scenario; the Engineer never approves its own work. Delegate actual deploy mechanics to
-**`docker-director2-deploy`** — write `environments.env`, bring the env up,
-poll health. Never hand-roll `local-up.sh`/docker calls yourself in this
-skill. Running scenarios (`run_scenarios.sh`) remains the QA lead's action in
-VALIDATE, not `docker-director2-deploy`'s job.
+This workflow **delegates execution to other installed skills** rather than
+reimplementing them. You *can* **use** them, and you are expected to:
+
+- **scenario authoring** → **use the `scenario-runner-authoring` skill.**
+  The Engineer writes the YAML and its evidence-backed data contract. Do not
+  hand-author the scenario as the Lead.
+- **scenario review** → **use the `scenario-runner-validation` skill.**
+  It independently accepts the exact YAML for DEPLOY or returns it for repair;
+  the Engineer never approves its own work.
+- **deployment** → **use the `docker-director2-deploy` skill.**
+  That skill writes `environments.env`, runs `local-up.sh`, and polls health.
+  Do not run `local-up.sh` or Docker commands directly from this workflow.
 
 ## The organization
 
 | Role | Job |
 |---|---|
-| **Lead** (this skill, running as an agent) | Runs the stage loop, assigns each stage, decides PASS/FAIL/BLOCKED, writes `scenario-acceptance-state.md`. Never authors scenarios, never deploys, never renders the verdict itself. |
-| **Engineer** (employee agent) | Invokes `scenario-runner-authoring` to author the acceptance YAML from the ticket's frozen spec package **and the real code diff already in the repo** — never a description of either. |
-| **Scenario reviewer** (employee agent) | Independently invokes `scenario-runner-validation` on the Engineer's YAML before DEPLOY. It accepts, returns to SCENARIOS, or returns to SPECS; it never edits or repairs YAML. |
-| **SRE** (employee agent) | Builds the change's image, then invokes `docker-director2-deploy` to get it running in the shared lower env, healthy. See DEPLOY below for the exact build steps. |
+| **Owner** (the human) | Already approved loop 1's spec. Resolves genuine business/spec questions and blockers; does not drive routine stage transitions. |
+| **Lead** (you) | Manages the process: decides the next step, assigns bounded work, validates results, gathers real evidence through the delegated skills, writes `scenario-acceptance-state.md`, transitions stages, and keeps the owner informed. Never authors scenarios, deploys, or renders the QA verdict. **You are the final approver of validation:** the owner approves the Loop 1 specification once; from there, you own the completion call. Scenario Review, deployment health, runner output, and QA verdict — never is a reported pass. If you cannot stand behind the evidence, the ticket is not PASS. |
+| **Engineer** (employee agent) | Uses the `scenario-runner-authoring` skill to create the acceptance YAML from the frozen ticket package and the actual code diff in the repository — never summaries of either. |
+| **Scenario reviewer** (employee agent) | Independently uses the `scenario-runner-validation` skill to review the Engineer's exact YAML before DEPLOY. Returns **ACCEPTED FOR DEPLOY**, **RETURN TO SCENARIOS**, or **RETURN TO SPECS** with evidence. Never edits or repairs YAML, deploys, or runs scenarios. |
+| **SRE** (employee agent) | Builds the change's image. After a successful build, uses the `docker-director2-deploy` skill to configure and deploy the required services, then confirms their health. Does not author scenarios, run them, or decide the acceptance verdict. |
 | **QA lead** (employee agent) | An independent employee. Reads frozen `specification.md` + the scenario YAML + the raw runner output directly, never the Engineer's or SRE's narrative. Writes `scenario-acceptance-code-review.md` — the lead's hand never touches it, same principle as loop 1's `code-review.md`. |
+| **Senior Engineer** (employee agent) | When a scenario, build, environment, or product failure needs debugging, root-causes it: reads the relevant sources, reproduces the failure, tests hypotheses, and returns the smallest evidence-backed path to continue. The Lead monitors the diagnosis and acts on it; the Lead never debugs the failure or asks the owner to classify it. |
 
 ## The five stages
 
 ```text
 SCENARIOS ──► SCENARIO REVIEW ──► DEPLOY ──► VALIDATE ──► DECISION
                                                       │
-                                        PASS → validated
-                                        FAIL → reopen the ticket (back to loop 1) or park
+                                        PASS → Lead sign-off 
+                                        FAIL → Lead reviews the evidence and assigns the next action
 
-any stage ──► BLOCKED   (env unavailable, VPN/images down, needed decision)
+any stage ──► BLOCKED
 ```
+
+## Autonomy after approval
+
+**Loop 2 is already approved.** You lead acceptance to validated —through
+SCENARIOS, SCENARIO REVIEW, DEPLOY, VALIDATE, and DECISION—assigning work,
+validating, correcting, and transitioning without asking the owner to move it
+forward. Stop only for a **genuine external execution blocker**. Never ask the owner to type “continue.”
+
+## Staying in sync
+
+The Lead serializes state-changing work so employees do not drift out of sync:
+
+- **One coordinator** — only the Lead decides the next step and writes
+  `scenario-acceptance-state.md`.
+- **One sync point** — read `scenario-acceptance-state.md` before every
+  action, write it after, and brief every employee from the current state,
+  never a stale copy.
+- **One active state-changing assignment at a time** — do not open the next
+  until the current result is back and validated. Read-only investigations may
+  run in parallel only when they cannot change or rely on the same output.
+- **Validate before accepting and before the next assignment** — reject a
+  result built on stale inputs instead of merging it into the workflow.
+- **No employee-to-employee handoffs** — all work flows employee → Lead →
+  employee.
 
 ## The ticket directory
 
@@ -82,90 +112,110 @@ Same shape as loop 1's control loop, run inside whichever stage is active:
 1. READ    scenario-acceptance-state.md — what stage, and the one unmet exit criterion?
 2. DECIDE  the single smallest next action.
 3. DO      assign the bounded task to the Engineer/SRE/QA lead for this stage.
-4. VERIFY  the real result yourself — the raw command output/report, never
-           the employee's summary of it. A description of what failed and why
-           is a claim; the actual captured stdout/stderr/report is the
-           evidence, and only that satisfies this step.
+4. JUDGE   the real result yourself — read the changed YAML/diff and raw
+           command output/report, never the employee's summary — then advance,
+           stay, go back, or block.
 5. WRITE   the outcome + next action into scenario-acceptance-state.md, append
            one History line naming what was actually verified — never advance
-           past VERIFY on a summary alone.
+           past JUDGE on a summary alone.
 6. LOOP    back to 1 — in the same turn.
 ```
 
-**The lead knows everything, because it reads everything.** When the SRE, Engineer,
-or QA lead returns a result, you do **not** accept its summary — you open the actual
-file yourself: `build.log` for a DEPLOY build (see below), the output of `python3
-schema_validate.py --file <path>` run from `scenarios/` for a SCENARIOS schema claim
-(where `<path>` is the accepted YAML path), or the runner's `report.html`/JUnit XML for
-a VALIDATE result. The summary is the employee's
-*claim*; that file's content is the *evidence*, and you accept only that. Record what
-the evidence actually showed in the History line, not "failed"/"passed" alone. You
-cannot control or monitor what you never looked at yourself; a report you didn't open
-is not evidence.
+**The Lead knows everything because it reads everything.** When any employee
+returns a result, do **not** accept its summary. If the employee changed a
+file, read the exact diff first. Then read the role's primary evidence:
+
+- **Engineer** — the exact YAML, its diff, and schema-validation output.
+- **Scenario reviewer** — the exact YAML, schema-validation output, and
+  independent review evidence.
+- **SRE** — `build.log` and the deployment skill's health output.
+- **QA lead** — the runner's JUnit XML, `report.html`, and the independent QA
+  verdict artifact.
+- **Senior Engineer** — the reproduction and complete diagnosis evidence
+  chain.
+
+The employee's summary and PASS/FAIL/BLOCKED label are *claims*; the diff,
+raw output, and artifacts are the *evidence*. Record what the evidence
+actually showed in the History line, not "GREEN" or an employee conclusion.
+The Lead decides the state from that evidence and the current stage's exit
+criterion. A report the Lead did not inspect is not evidence.
 
 ## Stages in detail
 
 ### SCENARIOS
 
-**Goal:** the acceptance scenarios for the change exist, mapped to
-`specification.md`'s Gherkin.
+**Follow `scenario-runner-authoring`** — it is the process to run for reading
+the frozen ticket package and real code diff, establishing the data contract,
+writing the YAML, and validating its schema. It is a **process, not text to
+reproduce.**
 
-- Assign the **Engineer** to invoke `scenario-runner-authoring`. They read
-  `specification.md` (Gherkin),
-  `02-investigation.md`, `04-code-guide.md`, and the real code diff, fresh —
-  to find every surface the change actually touches (a DB table, an
-  API/followup, a cache/queue effect), never assumed from a description.
-- They then write the scenario YAML itself per docker-director2's own
-  `scenarios/AUTHORING.md`, `scenarios/DESIGN.md`, and `scenarios/README.md`.
-  Read all three before touching YAML. They are canonical for the available
-  step shapes, local-data patterns, and runner behavior. Search for the
-  closest applicable scenario anywhere under `scenarios/`, including ticket
-  scenarios; do not limit the search to `scenarios/examples/`.
-- Build the scenario YAML before DEPLOY from the ticket and those sources.
-  Use only data setup, discovery, and cleanup behavior established by them or
-  by the ticket's real fixture/source. Do not invent fixture IDs, data, or
-  cleanup policy. If the needed information is not established, return the
-  evidence gap instead of fabricating a scenario.
-- Source-backed does not mean every literal must appear unchanged in one
-  source. A plan may combine compatible evidence: one source can establish
-  the required domain relationships while an existing scenario establishes
-  how local test values, active time windows, ownership, and restoration are
-  handled. Record each source and derivation. A value with no such derivation
-  is still invented.
-- For every required data condition, use one evidenced path:
-  - If source evidence proves DEPLOY supplies it, add a YAML precondition
-    assertion that verifies the complete required state before the feature
-    action.
-  - Otherwise, add source-backed setup and an immediate precondition assertion
-    that proves the complete required state was created. The setup is reviewed
-    before DEPLOY but runs only against the deployed databases.
-- **Exit:** scenario YAML exists, mapped to real `specification.md` behaviors,
-  and is ready for independent review.
-- **Back-routing:** a missing source or prerequisite returns to SCENARIOS for
-  investigation. Before escalating to a human, record the sources searched,
-  a concrete source-backed candidate plan, or why each candidate was rejected.
-  Missing an exact current literal in the ticket fixture alone is not a
-  blocker. A scope/behavior problem routes to loop 1's SPECS instead.
-
+- Assign the **Engineer** to invoke `scenario-runner-authoring`. Before
+  writing YAML, the Engineer reads `specification.md` (Gherkin),
+  `02-investigation.md`, `04-code-guide.md`, and the real code diff. Those
+  sources identify every database table, API/followup, cache, or queue the
+  change touches; never assume that information from a description.
+- The Engineer then writes the scenario YAML itself according to
+  docker-director2's `scenarios/AUTHORING.md`, `scenarios/DESIGN.md`, and
+  `scenarios/README.md`. The Engineer reads all three before touching YAML.
+  These documents are canonical for the available step shapes, local-data
+  patterns, and runner behavior. The Engineer searches for the closest
+  applicable scenario anywhere under `scenarios/`, including ticket scenarios;
+  do not limit the search to `scenarios/examples/`.
+- The Engineer writes the scenario YAML before DEPLOY from the ticket and the
+  sources above. Use only data setup, discovery, and cleanup behavior
+  established by the ticket, source code, schemas, fixtures, existing
+  scenarios, or harness test files changed by the ticket. Do not invent fixture
+  IDs, data, or cleanup policy. A harness test file can help establish a
+  hierarchy or relationship: the Engineer translates the rows required by the
+  selected feature query using the current schemas and one valid row example.
+  Creating those rows is SCENARIOS work, not a reason to request a live fixture
+  contract or deployed fixture from the user.
+- For all data the test needs, show where it comes from:
+  - If the source shows it is already in the deployed database, add a YAML
+    check that all needed rows and values exist before running the feature.
+  - Otherwise, add YAML setup based on the code or schema, then immediately
+    check that all needed rows and values were created.
+  Review the setup before DEPLOY. Run it only in the deployed databases.
+- **Done:** the Engineer has written scenarios for every Given/When/Then in
+  `specification.md`.
+- **When to return to SCENARIOS:** - If the scenario does not have the data it needs, 
+  the Lead sends  it back to SCENARIOS. The Engineer works out the required data 
+  before the scenario movesforward.
+  
+  Not finding the same current value in the ticket test data does not block the
+  work. A hierarchy found only in a harness test does not block the work if the
+  current schema and production code show how to create it in the local
+  database. If the required behavior is unclear or needs to change, the Lead
+  sends the ticket to read Loop 1 SPECS.
+  
+  At the end of the scenario, teardown removes the rows the scenario created or
+  inserted. The cleanup SQL must delete only that scenario’s data.
+  
 ### SCENARIO REVIEW
 
-**Goal:** independently decide whether the authored YAML is grounded and safe
-enough to deploy.
+**Follow `scenario-runner-validation`** — it is the process to review the
+scenario YAML before DEPLOY. It checks that the YAML uses real sources, handles
+test data safely, and requires the right services and databases. It is a
+**process, not text to reproduce.**
 
 - Assign the **Scenario reviewer** to invoke `scenario-runner-validation`.
   The reviewer reads the actual YAML and sources, performs its schema check,
   and returns its stated verdict with evidence.
-- The lead reads that evidence itself, including the schema command output.
-  Record the accepted YAML path, data plan, and deployment union in
+- The Lead reads the branch’s code diff, the YAML, the review evidence, and the
+  schema check output. Confirm that the reviewer checked the current YAML
+  against the code changes before accepting the verdict. Record the accepted
+  YAML path, test-data plan, and required services and databases in
   `scenario-acceptance-state.md`.
-- **Exit:** only **ACCEPTED FOR DEPLOY** enters DEPLOY.
-- **Back-routing:** **RETURN TO SCENARIOS** returns the precise evidence gap to
-  the Engineer; **RETURN TO SPECS** returns the behavior ambiguity to loop 1.
-  Neither result authorizes an invented repair or deployment.
+- Start DEPLOY only after the reviewer returns **ACCEPTED FOR DEPLOY**.
+- On **RETURN TO SCENARIOS**, the Lead reads the exact missing evidence and
+  assigns the Engineer to repair the YAML. With the database running, the
+  Engineer can query it for the data needed for the repair, if the Lead assigns the task.
 
 ### DEPLOY
 
-**Goal:** the completed change is running in the shared lower env, healthy.
+During DEPLOY, the SRE builds the change and deploys it to the shared lower
+environment using `docker-director2-deploy`. The SRE gives the Lead the
+deployment result and health checks.
 
 - Assign the **SRE**. Before they can build the change's image, they must
   first resolve `director2-aws-build` — the container the build runs
@@ -224,7 +274,7 @@ enough to deploy.
     nothing was tried. If the same infra failure keeps recurring, that's a
     diagnosis worth reporting (why the environment won't hold), not a spent
     attempt budget.
-  - **VERIFY before writing BLOCKED (control-loop step 4):** open `build.log`
+  - **JUDGE before writing BLOCKED (control-loop step 4):** open `build.log`
     yourself and quote its actual tail in `scenario-acceptance-state.md`. A
     description of the error ("the build failed because of X") is not
     evidence and does not satisfy this step — only the file's own text does.
@@ -274,69 +324,80 @@ enough to deploy.
 
 ### VALIDATE
 
-**Goal:** the QA lead confirms the deployed change actually satisfies the
-scenarios, and that the scenarios themselves prove real behavior (not
-hollow).
+The QA lead runs the approved scenario YAML against the deployed environment, 
+reads the runner’s result files, and decides whether the scenario proves the 
+deployed change works.
 
-Two checks — mirrors why loop 1 has both JUDGE (coverage) and MUTATION
-(real-evidence), not just GREEN:
+1. **Coverage check (mechanical)** - The QA lead compares every Given/When/Then 
+  in `specification.md` with the scenario YAML. Each required result must have a YAML 
+  check that reads theresult produced by the deployed change.
 
-1. **Coverage check (mechanical)** — every `specification.md`
-   Given/When/Then maps to a real, tight assertion in the Engineer's
-   scenario YAML:
-   - `body_regex` with a clear anchor, not a loose `body_contains` that
-     would also match an unrelated body containing the same substring.
-   - exact `row.N.col` value checks for the asserted data, not just
-     `rows: N` (a row-count-only check passes even with the wrong value).
-   - a real `wait:` poll on actual state for anything async, not `sleep`
-     standing in for an assertion.
-   - a negative/absence scenario proves absence with an assert-zero
-     (`rows: 0` / `row.0.cnt: 0`), not "no error was thrown."
-   A scenario that runs but whose asserts are loose or hollow is a
-   **blocking** finding — the acceptance-test analog of a hollow unit test.
-2. **Run + evaluate** — the QA lead reads the accepted scenario YAML path,
-   then runs `./run_scenarios.sh <path>` from `scenarios/` against the
-   healthy env (for example, `./run_scenarios.sh
-   tickets/<TICKET-ID>/<scenario>.yaml`). A bare `run_scenarios.sh` runs
-   `scenarios/examples/*.yaml` and silently skips ticket scenarios. The QA
-   lead lets the accepted setup run against the deployed databases, then reads
-   the runner's own output (`report.html`/JUnit) directly — never the
-   Engineer's or SRE's claim. Do not manually seed data or rewrite YAML here.
+  - Check response text with an anchored `body_regex`, not a loose
+    `body_contains` that could match unrelated text.
+  - Check the required database values with exact `row.N.column` checks, not
+    only `rows: N`.
+  - For work that finishes later, use `wait:` to check the real result; do not
+    use `sleep` instead of a check.
+  - For an expected absence, check zero rows (`rows: 0` or `row.0.cnt: 0`).
+    “No error” does not prove that the result is absent.
 
-The QA lead writes `scenario-acceptance-code-review.md`, fed frozen `specification.md` + the
-scenario YAML + raw runner output — never a narrative summary.
+  A scenario is not accepted when its checks could pass with the wrong result.
+  Go back to **SCENARIOS** if the checks fail or are insufficient.
 
-- **Exit:** a verdict with evidence (PASS/FAIL + findings).
-- **Back-routing:** go back to SCENARIOS for a blocking coverage finding
-  (hollow assert), a failed data precondition, or a service-side processing
-  failure caused by missing scenario-created dependencies. For asynchronous
-  APIs, an accepted/start response is not completion; inspect the failed
-  downstream wait/assertion and relevant service error before classifying the
-  result. Return incomplete fixture construction to SCENARIOS rather than
-  treating it as a product failure. Go back to DEPLOY if the failure is
-  environmental, not behavioral.
+2. **Run + evaluate** - The QA lead runs the accepted scenario YAML from `scenarios/`
+  against the healthy deployed environment:
+
+  `./run_scenarios.sh tickets/<TICKET-ID>/<scenario>.yaml`
+
+  Running `./run_scenarios.sh` without the YAML path runs only
+  `scenarios/examples/*.yaml`; it does not run ticket scenarios.
+
+  The scenario YAML creates and checks its own data in the deployed databases.
+  The QA lead reads the runner’s `report.html` and JUnit XML directly. The QA
+  lead does not add data by hand or change the YAML.
+
+
+The QA lead writes `scenario-acceptance-code-review.md` using the frozen
+`specification.md`, the scenario YAML that ran, and the runner’s raw output.
+The report records the QA lead’s findings from those files, not a summary of
+another person’s claim.
+
+The QA lead returns `scenario-acceptance-code-review.md` and the raw runner
+output to the Lead. The report says whether the scenario completed its setup,
+reached its final product check, and passed or failed. It records any problem
+found in the YAML, the deployed environment, or the product result.
+
+
+- The QA lead sends the result to the Lead: PASS or FAIL, with findings and
+  evidence.
+
 
 ### DECISION
 
-**Goal:** route the verdict.
+**This is the Lead’s acceptance decision — not an automatic transition.**
+Scenario Review acceptance, a healthy deployment, and the runner result are the
+inputs. The Lead reads the exact YAML, review evidence, deployment health, and
+runner report before deciding PASS or FAIL. A PASS means the deployed change
+produced every required result. A FAIL means the accepted scenario reached its
+final check and the deployed change produced a wrong result. If any evidence is
+only a claim, the Lead verifies it before making the decision.
 
-- **PASS** → the change is validated; loop 2 is done for this ticket/batch
-  entry.
-- **FAIL** → fail-routing (which loop-1 stage to reopen — TDD for a code
-  bug, SPECS for wrong behavior) is **still an open question**. Until it's
-  resolved, park the ticket for human triage rather than guessing which
-  loop-1 stage to reopen. Fail-fast/park philosophy holds, same as loop 1.
 
 ### BLOCKED
 
-Any stage enters BLOCKED when a required env, VPN, image, or decision is
-genuinely unavailable — and only after trying the safe options available.
-`scenario-acceptance-state.md` records the stage it came from and the one exact thing a
-human must provide to resume. Infra deps (VPN, `docker.mgo.com` images,
-downloaded DBs) are transient on flake, not an automatic block. BLOCKED
-never jumps straight to a PASS/validated DECISION. SCENARIOS is not BLOCKED
-merely because the ticket fixture lacks a current literal value; complete the
-required repository search and candidate analysis first.
+Only after you've tried the safe options available. Record the origin
+stage and the one exact human action needed to resume. Never jumps straight to
+PASS.
+
+## Delegation is the model
+
+You always delegate acceptance work via a short assignment: the exact inputs
+the employee may read, the single deliverable, the files it may write
+(everything else off-limits), what “done/pass” looks like, and whether it may run an
+approved command. The employee returns a result with real evidence; you
+validate it against the current state, then accept or reject. Your only
+hands-on action is running an approved command to gather real evidence — that
+is verifying the work, not doing it.
 
 ## When to Use
 
@@ -346,60 +407,39 @@ an automatic trigger later, once this is validated standalone.
 
 ## Non-negotiables
 
-- Evidence is a real scenario run against a real deployed env — never a
-  claim about one.
-- One active assignment at a time; the lead is the only coordinator.
-- The lead never authors scenarios, never deploys, never renders the
-  verdict — each is a distinct role, same separation-of-duties reason loop 1
-  keeps the Judge independent from the Senior Engineer.
-- DEPLOY cannot begin without `scenario-runner-validation` accepting the
-  exact YAML path and its deployment union.
-- `scenario-acceptance-state.md` and `scenario-acceptance-code-review.md` are additive only. Never edit a
-  file loop 1 wrote.
-- Fail routing is unresolved — on FAIL, park for human triage. Don't invent
-  a routing rule to avoid stopping.
-
-## Common Rationalizations
-
-- "The QA lead can just trust the Engineer's scenario ran fine" — red flag;
-  mirrors loop 1's "accept the diff, not the summary." The QA lead reads the
-  raw runner output itself.
-- "Skip DEPLOY's health check, the env was fine an hour ago" — the deploy
-  skill always re-polls; a shared env drifts between tickets.
-- "The scenario's row-count assertion is good enough" — no; a hollow
-  assertion is a blocking VALIDATE finding, not a nitpick.
-- "The ticket fixture's dates are historical, so a live scenario needs
-  invented data" — not established until applicable ticket scenarios and
-  their source-backed time/setup patterns have also been investigated.
-- "FAIL clearly means a TDD bug, just reopen loop 1's TDD stage" — fail
-  routing isn't resolved yet; park it instead of guessing.
-
-## Red Flags
-
-- The lead calls `local-up.sh`/docker directly instead of delegating to
-  `docker-director2-deploy`.
-- The SRE (or anyone but the QA lead) runs the scenarios or reads the
-  runner's report — that's the QA lead's own action in VALIDATE.
-- `scenario-acceptance-code-review.md` is written by anyone other than the QA lead, or is
-  based on a narrative instead of raw runner output.
-- A file loop 1 wrote (`state.md`, `specification.md`, `code-review.md`,
-  etc.) gets edited.
-- A FAIL result gets auto-routed to a specific loop-1 stage without human
-  triage.
+- Read `scenario-acceptance-state.md` before acting; write it after every
+  action.
+- Delegate acceptance work; never author scenarios, deploy, run scenarios, or
+  write the QA report yourself.
+- Evidence is a real scenario run against a real deployed environment — never
+  a claim about one.
+- Accept the artifact, not the summary. Read what each employee returned and
+  record what it showed in the History line.
+- `scenario-acceptance-state.md` and
+  `scenario-acceptance-code-review.md` are additive only. Never edit a file
+  Loop 1 wrote.
+- One active state-changing assignment at a time.
+- A stalled employee is a failed delegation. Reissue the same bounded
+  assignment to a fresh employee; never do its work yourself.
+- When debugging is needed, assign the Senior Engineer. Do not debug the
+  failure yourself.
+- Use `docker-director2-deploy` for deployment. Do not run `local-up.sh` or
+  Docker commands yourself.
+- Never put a secret in a ticket file, prompt, or command argument.
+- Copying an employee verdict without reading the artifact — yes. Non-negotiable 
+  evidence rule.
+- The QA lead writes the QA report from the raw runner output. The Lead reads
+  the same output before accepting the result.
 
 ## Verification
 
-- `scenario-acceptance-state.md` exists in the ticket directory and its History is
-  append-only, one line per stage transition, matching loop 1's `state.md`
-  convention.
-- Every `specification.md` Given/When/Then has a corresponding tight
-  assertion in the scenario YAML (no hollow `rows: N`/`body_contains`-only
-  checks).
-- The accepted scenario path, its `scenario-runner-validation` verdict, and
-  deployment union are recorded before DEPLOY starts.
-- The DEPLOY stage's result came from `docker-director2-deploy`'s real
-  output (its Health section), not a paraphrase.
-- `scenario-acceptance-code-review.md` cites specific runner evidence (report path, exit
-  code, specific failing assertion) for its verdict — this is where the
-  exit-code/report-path evidence lives, since the QA lead runs the scenarios
-  in VALIDATE, not DEPLOY.
+- `scenario-acceptance-state.md` must exist in the ticket directory. Its History
+  and must be append-only and include one line after every action.
+- Before DEPLOY begins, the accepted scenario and the
+  `scenario-runner-validation` result are recorded in
+  `scenario-acceptance-state.md`.
+- The DEPLOY record must include the health-check output from
+  `docker-director2-deploy`.
+- `scenario-acceptance-code-review.md` must say which scenario the QA lead ran.
+  It must include the runner report path and the exit result.
+
