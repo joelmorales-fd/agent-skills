@@ -1,6 +1,6 @@
 # <TICKET-ID>: <short title> — Scenario Acceptance
 
-- **Stage:** <SCENARIOS | SCENARIO REVIEW | DEPLOY | VALIDATE | DECISION | BLOCKED | validated>
+- **Stage:** <SCENARIOS | DEPLOY | SCENARIO GROUND | VALIDATE | DECISION | BLOCKED>
 - **Ticket directory:** <path to the loop-1 ticket directory this runs against>
 - **Updated:** <date + time>
 
@@ -13,8 +13,8 @@ QA finding, or scenario-run result. Facts, not interpretation.>
 
 ## Lead's read
 <The lead's interpretation of that fact, including any uncertainty. For an
-unclear live failure, record the source-input → processing → materialization →
-assertion evidence chain and its first broken boundary.>
+unclear failure, record the evidence chain from source input through processing
+to the final result and assertion, and name the first boundary where it broke.>
 
 ## Next action
 <The single next thing the Lead will do automatically, or the exact resume
@@ -26,9 +26,9 @@ or an external execution prerequisite is unavailable. Engineering diagnosis,
 runner limitations with existing exact harness proof, and routine routing never
 wait on the owner. Otherwise "none".>
 
-## Coverage ledger
-<One row per approved behavior: LIVE → exact YAML assertion, or LOOP 1 HARNESS
-→ exact test and direct GREEN evidence.>
+## Coverage
+<One row per approved behavior, with the exact YAML assertion that proves it in
+the deployed environment.>
 
 ## History
 <Append-only, newest last. **Every** action adds one line here in the same
@@ -40,8 +40,8 @@ employee's PASS/FAIL label.>
 
 ## Decision
 <Filled only at DECISION — PASS/FAIL and what happened next:
-- **PASS** — after the Lead verifies every required artifact, records its
-  deliberate `validated` sign-off.
+- **PASS** — after the Lead verifies every required artifact, records the
+  sign-off.
 - **FAIL** — records the evidence and automatic route: loop-1 TDD for a code
   defect, loop-1 SPECS for an approved-contract defect, or Senior Engineer
   diagnosis when the cause is unclear.>

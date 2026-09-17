@@ -17,9 +17,10 @@ narrative from the Engineer or SRE>
 
 ### Coverage check
 <One row per `specification.md` Given/When/Then — does a scenario assert it,
-and is that assert tight (not hollow)? Cite the exact assertion.>
+and is that assertion specific enough that it could not pass with the wrong
+result? Cite the exact assertion.>
 
-| Scenario behavior | Asserted by | Tight? | Note |
+| Scenario behavior | Asserted by | Specific? | Note |
 |---|---|---|---|
 | <Given/When/Then> | <scenario file:step> | <yes/no> | <why, if not tight> |
 
@@ -27,8 +28,8 @@ and is that assert tight (not hollow)? Cite the exact assertion.>
 <Empty if none. Each finding:>
 
 - **[<critical|high|medium|low>] <blocking? yes/no>** — <location>
-  - What: <the defect — a hollow assert, a real behavior failure, an
-    environmental issue>
+  - What: <the defect — a loose assertion that could pass with the wrong
+    result, a real behavior failure, an environmental issue>
   - Why it matters: <impact on the approved scenario/spec>
   - Evidence: <report path, exit code, or specific failing row/response>
   - Fix: <what would resolve it>

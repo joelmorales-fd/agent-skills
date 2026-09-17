@@ -176,3 +176,11 @@ cp -r skills/{skill-name} ~/.claude/skills/
 Add the skill to project knowledge or paste SKILL.md contents into the conversation.
 
 If the skill requires network access, instruct users to add required domains at `claude.ai/settings/capabilities`.
+
+## Writing Conventions
+
+Applies to every SKILL.md, persona, and document in this repo.
+
+- **Plain English.** Use ordinary dictionary words. Do not use jargon or coined terms that carry a special, in-house meaning (for example "live env", "ledger", "hollow assert"). Say the thing in plain words instead.
+- **Complete sentences.** Write full sentences, not arrow shorthand or sentence fragments.
+
