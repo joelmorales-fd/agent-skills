@@ -18,9 +18,12 @@ environment).
 This workflow **delegates execution to other installed skills** rather than
 reimplementing them. You *can* **use** them, and you are expected to:
 
-- **scenario authoring** → **use the `scenario-runner-authoring` skill.**
-  The Engineer writes the YAML and its evidence-backed data contract. Do not
-  hand-author the scenario as the Lead.
+- **scenario draft** → **use the `scenario-runner-authoring` skill.**
+  In SCENARIOS, the Engineer determines the services and databases and writes
+  the first-draft scenario. Do not hand-author it as the Lead.
+- **scenario grounding** → **use the `scenario-runner-grounding` skill.**
+  In SCENARIO GROUND, the Engineer resolves the draft against the deployed
+  databases into the final scenario. Do not hand-author it as the Lead.
 - **deployment** → **use the `docker-director2-deploy` skill.**
   That skill writes `environments.env`, runs `local-up.sh`, and polls health.
   Do not run `local-up.sh` or Docker commands directly from this workflow.
@@ -294,6 +297,11 @@ deployment result and health checks.
 Once the lower environment is up, one agent connects to the deployed databases, resolves
 the real ids, and fills them into the draft scenario — turning the first draft
 into a runnable scenario against real data.
+
+**Follow `scenario-runner-grounding`** — it is the process for resolving the
+draft's placeholders against the deployed databases, finalizing the inserts,
+precondition, assertions, and teardown, and running schema validation. It is a
+**process, not text to reproduce.**
 
 - Assign the **Engineer** (the **Senior Engineer** may take this when it is
   hard). The lower environment must be up and healthy from DEPLOY before this starts.

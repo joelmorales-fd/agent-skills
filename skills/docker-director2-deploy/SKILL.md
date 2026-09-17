@@ -1,6 +1,6 @@
 ---
 name: docker-director2-deploy
-description: Deploys a completed director2-aws change into the shared docker-director2 lower env and confirms it's healthy. Use when you need to get a branch's built image running in docker-director2 — it does not author or run acceptance scenarios.
+description: Deploys a completed director2-aws change into the shared docker-director2 lower environment and confirms it's healthy. Use when you need to get a branch's built image running in docker-director2 — it does not author or run acceptance scenarios.
 ---
 
 # Docker Director2 Deploy
@@ -8,7 +8,7 @@ description: Deploys a completed director2-aws change into the shared docker-dir
 ## Overview
 
 This skill exists for one repeated loop: configure docker-director2 for the
-change under test, bring the shared lower env up, and confirm it's healthy.
+change under test, bring the shared lower environment up, and confirm it's healthy.
 **Three sequential mechanical steps** — write a config file, then call the
 same scripts directly. It manages the deployment environment only; it
 takes an already-built image as given and never builds one itself.
@@ -16,7 +16,7 @@ takes an already-built image as given and never builds one itself.
 ## When to Use
 
 - You need to deploy a branch-built director2-aws (or CIS/portal/ncis/
-  webclient/dmedia) image into the shared docker-director2 lower env
+  webclient/dmedia) image into the shared docker-director2 lower environment
 - You need to bring the docker-director2 suite up/confirm it's healthy for a
   ticket already deployed
 - `lean-scenario-acceptance`'s DEPLOY stage needs the actual deploy execution
@@ -24,11 +24,11 @@ takes an already-built image as given and never builds one itself.
 ## When NOT to Use
 
 - Authoring the acceptance scenarios themselves — that's the Engineer's job
-  in `lean-scenario-acceptance` (reads the frozen spec package + the real
-  code diff, writes the scenario YAML)
+  in `lean-scenario-acceptance` (reads the frozen spec package and the
+  branch's code changes, writes the scenario YAML)
 - Running the scenarios or rendering a PASS/FAIL verdict — that's the QA
   lead's job; the QA lead invokes `scenarios/run_scenarios.sh` directly
-  against the env this skill stood up, once this skill reports healthy
+  against the environment this skill stood up, once this skill reports healthy
 - Deciding stages, roles, or ticket-directory files — that's
   `lean-scenario-acceptance`'s job; this skill has no concept of a ticket
 
@@ -68,7 +68,7 @@ python3 <path-to-this-skill>/scripts/set-config.py --director-version local|late
   specific service DBs).
 - `UPDATE_DATABASES=No` is written automatically — never a flag.
 
-### Step 2: UP — bring the env up
+### Step 2: UP — bring the environment up
 
 Run `./local-up.sh` from `configurations/`.
 
@@ -107,7 +107,7 @@ docker exec <container> bash -c 'exec 3<>/dev/tcp/127.0.0.1/3306'
   initializing and elapsed time each round, never a silent wait.
 - Escalate to **down** only if `docker compose ps` shows `exited`/`dead`
   for that container, or the wait runs far past any bootstrap seen in this
-  env.
+  environment.
 
 `AWS` DB entries start no local container and skip this probe entirely.
 
@@ -124,24 +124,24 @@ Use this output every time:
 ## Config
 [DB_DEPLOY_TYPE used; which service set to local]
 
-## Env State
+## Environment State
 [VPN: ok | blocked] [containers: reused | rebuilt]
 
 ## Health
 [all up | listing down services]
 
 ## Next Move
-[one concrete next step, or "None — env is up, hand off to run scenarios"]
+[one concrete next step, or "None — environment is up, hand off to run scenarios"]
 ```
 
 ## Common Rationalizations
 
-- "The env is probably still healthy from last time" — HEALTH always
-  re-polls; a previously-healthy env can have drifted (a sibling ticket's
+- "The environment is probably still healthy from last time" — HEALTH always
+  re-polls; a previously-healthy environment can have drifted (a sibling ticket's
   deploy, a container restart).
 - "Rebuild `harness-mysql-preloaded` every run to be safe" — that's the
-  harness skill's concern, not this one; `harness-mysql-preloaded` is a test
-  fixture, unrelated to this skill.
+  harness skill's concern, not this one; `harness-mysql-preloaded` is a preloaded
+  test database, unrelated to this skill.
 - "The image is missing or stale, build/rebuild it here" — no; this skill
   never builds an image. If `--director-version local` doesn't reflect the
   current change, that's the SRE's BUILD step (in `lean-scenario-acceptance`
@@ -149,7 +149,7 @@ Use this output every time:
 - "DB_DEPLOY_TYPE=AWS is always safe, just default to it" — no; use exactly
   what the caller passed in. A scenario that mutates needs LOCAL DBs (AWS is
   READONLY and the runner blocks the write).
-- "Since the env is up, might as well run the scenarios too" — no; that's a
+- "Since the environment is up, might as well run the scenarios too" — no; that's a
   separate skill's job. This skill reports healthy and stops.
 
 ## Red Flags

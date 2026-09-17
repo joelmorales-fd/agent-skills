@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Emit bounded schema or harness-fixture evidence as JSON."""
+"""Emit bounded schema or preloaded-row evidence as JSON."""
 
 import argparse
 import json
@@ -24,7 +24,7 @@ def extract_ddl(path: Path, table: str, max_lines: int) -> dict:
     raise ValueError(f"CREATE TABLE `{table}` not found in {path}")
 
 
-def extract_fixture(path: Path, table: str, ids: set[str], max_rows: int) -> dict:
+def extract_rows(path: Path, table: str, ids: set[str], max_rows: int) -> dict:
     rows = []
     root = ET.parse(path).getroot()
     for case in root.findall("case"):
@@ -42,7 +42,7 @@ def extract_fixture(path: Path, table: str, ids: set[str], max_rows: int) -> dic
                 )
     if not rows:
         raise ValueError(f"no matching rows for {table} in {path}")
-    return {"fixture": str(path), "table": table, "rows": rows}
+    return {"source": str(path), "table": table, "rows": rows}
 
 
 def main() -> int:
@@ -54,19 +54,19 @@ def main() -> int:
     ddl.add_argument("table")
     ddl.add_argument("--max-lines", type=int, default=400)
 
-    fixture = subparsers.add_parser("fixture")
-    fixture.add_argument("fixture", type=Path)
-    fixture.add_argument("table")
-    fixture.add_argument("--id", action="append", default=[])
-    fixture.add_argument("--max-rows", type=int, default=20)
+    rows = subparsers.add_parser("rows")
+    rows.add_argument("path", type=Path)
+    rows.add_argument("table")
+    rows.add_argument("--id", action="append", default=[])
+    rows.add_argument("--max-rows", type=int, default=20)
 
     args = parser.parse_args()
     try:
         if args.command == "ddl":
             result = extract_ddl(args.schema, args.table, args.max_lines)
         else:
-            result = extract_fixture(
-                args.fixture, args.table, set(args.id), args.max_rows
+            result = extract_rows(
+                args.path, args.table, set(args.id), args.max_rows
             )
     except (OSError, ET.ParseError, ValueError) as exc:
         print(json.dumps({"error": str(exc)}))
