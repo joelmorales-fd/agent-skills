@@ -296,11 +296,12 @@ deployment result and health checks.
 
 Once the lower environment is up, one agent connects to the deployed databases, resolves
 the real ids, and fills them into the draft scenario — turning the first draft
-into a runnable scenario against real data.
+into a scenario that runs clean against real data.
 
 **Follow `scenario-runner-grounding`** — it is the process for resolving the
 draft's placeholders against the deployed databases, finalizing the inserts,
-precondition, assertions, and teardown, and running schema validation. It is a
+precondition, assertions, and teardown, running schema validation, then running
+the scenario against the deployed system until it passes. It is a
 **process, not text to reproduce.**
 
 - Assign the **Engineer** (the **Senior Engineer** may take this when it is
@@ -311,9 +312,10 @@ precondition, assertions, and teardown, and running schema validation. It is a
   rule: a direct DB read → `router`; `contentSearch` → `router,data1,data2`; a
   publish or source-state assertion → `CIS`.
 - **Ground every id in real, complete content.** Trace what the change's code
-  path requires of the content, then select a real instance that meets all of
-  it. Insert rows only as a last resort, and when you do, insert the whole set
-  of rows the pipeline reads, not a partial row.
+  path requires of the content, then reuse the closest already-valid content and
+  insert or update only what it still lacks to qualify. Build content from
+  scratch only as a last resort, and when you do, insert the whole set of rows
+  the pipeline reads, not a partial row.
 - **Do not invent ids or data.** Every id in the scenario is one found in, or
   created in, the deployed databases. If the data the scenario needs does not
   exist and cannot be created from the schema and the change's code, the Lead
@@ -324,9 +326,8 @@ precondition, assertions, and teardown, and running schema validation. It is a
   code changes.
 - **Teardown removes only what this scenario created.** Any rows the scenario
   inserts are removed at the end; the cleanup deletes only that scenario's data.
-- This stage is complete when the scenario can run against the deployed
-  environment: every id is resolved to real data, every needed row is present,
-  and the teardown is written.
+- This stage is complete when the scenario ran clean end to end against the
+  deployed environment — setup, action, every assertion, and teardown green.
 
 ### VALIDATE
 
@@ -338,14 +339,10 @@ deployed change works.
   in `specification.md` with the scenario YAML. Each required result must have a YAML 
   check that reads the result produced by the deployed change.
 
-  - Check response text with an anchored `body_regex`, not a loose
-    `body_contains` that could match unrelated text.
-  - Check the required database values with exact `row.N.column` checks, not
-    only `rows: N`.
-  - For work that finishes later, use `wait:` to check the real result; do not
-    use `sleep` instead of a check.
-  - For an expected absence, check zero rows (`rows: 0` or `row.0.cnt: 0`).
-    “No error” does not prove that the result is absent.
+  - Each required behavior must have a check that would fail if the deployed
+    change produced the wrong result — one that reads the actual value or state,
+    not just that a call returned. Follow `scenarios/AUTHORING.md` for the
+    assertion patterns, preferring specific `body_contains` substrings.
 
   A scenario is not accepted when its checks could pass with the wrong result.
   Go back to **SCENARIOS** if the checks fail or are insufficient.
@@ -358,7 +355,7 @@ deployed change works.
   Running `./run_scenarios.sh` without the YAML path runs only
   `scenarios/examples/*.yaml`; it does not run ticket scenarios.
 
-  The scenario YAML creates and checks its own data in the deployed databases.
+  The scenario YAML sets up and checks its own data in the deployed databases.
   The QA lead reads the runner’s `report.html` and JUnit XML directly. The QA
   lead does not add data by hand or change the YAML.
 
@@ -445,8 +442,9 @@ an automatic trigger later, once this is proven standalone.
   determined in SCENARIOS are recorded in `scenario-acceptance-state.md`.
 - The DEPLOY record must include the health-check output from
   `docker-director2-deploy`.
-- Before VALIDATE begins, the real ids and data resolved in SCENARIO GROUND are
-  recorded in `scenario-acceptance-state.md`.
+- Before VALIDATE begins, the real ids and data resolved in SCENARIO GROUND, and
+  the clean run that proves the scenario passes end to end, are recorded in
+  `scenario-acceptance-state.md`.
 - `scenario-acceptance-code-review.md` must say which scenario the QA lead ran.
   It must include the runner report path and the exit result.
 
