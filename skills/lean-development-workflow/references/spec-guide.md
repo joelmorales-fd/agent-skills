@@ -20,7 +20,17 @@ Detect the repo and set the test strategy for all stages:
 - `build.gradle`, no harness → **Spring Boot / Gradle** (`./gradlew test` + `@SpringBootTest`)
 - `pom.xml`, no harness → **Spring Boot / Maven** (`mvn test` + `@SpringBootTest`)
 
-Tell the owner what was detected. Ask where to save the docs (default: the ticket dir).
+If the repository has a root `AGENTS.md`, read it — it states the repository's
+exact test commands, where things live, what to reuse, and which changes are
+contract changes. It complements, and does not replace, a workflow-side
+`references/investigation-<repo>.md`: when one exists, read both. For
+director2-aws the investigation reference is required even though the repository
+has an `AGENTS.md`, because it carries the domain rules (session identity, AVOD
+eligibility, Redis, content search) and points to the harness skill.
+
+Tell the owner what was detected, then **ask the owner where the ticket directory
+should live**. This is a required question with no default — do not assume a path,
+and do not place it inside the product repository whose code the ticket changes.
 
 ## Stage 1 — Ticket Intake → `01-scope.md`
 

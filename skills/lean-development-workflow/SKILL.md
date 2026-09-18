@@ -111,8 +111,10 @@ During SPECS the spec is collected as the AVOD package — `01-scope.md`,
 if TDD needs scope the guide didn't list, the deviation is recorded in
 `05-scope-changes.md` (never by editing the guide). See the TDD stage.
 
-**Start** a ticket by creating the directory with a fresh `state.md` at stage
-`SPECS`. That first write is step 0; then run the loop.
+**Start** a ticket by **asking the owner where the ticket directory should live**
+— a required question, never an assumed path. Once the owner answers, create the
+directory there with a fresh `state.md` at stage `SPECS`. That first write is step
+0; then run the loop.
 
 ## The control loop
 
@@ -157,10 +159,13 @@ Key rules:
   block. Record `01-scope.md`; gate on the owner confirming scope.
 - The lead is a manager: it asks / validates / records; a **specialist** drafts
   the investigation, roadmap, code guide, and Gherkin.
-- Hand the specialist the repo's investigation reference
-  (`references/investigation-<repo>.md`, e.g. `investigation-director2-aws.md`) so
-  it knows where to look and what rules to check — then it **reads the real code**
-  and quotes it with `File:line`.
+- Ground the investigation in the repo's own facts. Hand the specialist the
+  repo's root `AGENTS.md` when it has one (test commands, where things live, what
+  to reuse, contract boundaries) **and** the workflow-side reference
+  (`references/investigation-<repo>.md`) when one exists. For director2-aws the
+  reference is required even though the repo has an `AGENTS.md`, because it
+  carries the domain rules. Either way the specialist then **reads the real
+  code** and quotes it with `File:line`.
 - **Do not copy the templates, the guide, or the reference into the ticket files.**
   Fill them with real ticket content; an investigation that echoes the template or
   the reference instead of quoting real code is rejected.
