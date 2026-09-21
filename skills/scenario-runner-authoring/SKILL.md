@@ -1,6 +1,6 @@
 ---
 name: scenario-runner-authoring
-description: Produces the first-draft scenario for one docker-director2 ticket: determines the services and databases it needs and maps every behavior in the specification to a scenario skeleton. Use during the SCENARIOS stage. Real ids and data are resolved later, in SCENARIO GROUND. Does not deploy or run scenarios.
+description: "Produces the first-draft scenario for one docker-director2 ticket: determines the services and databases it needs and maps every behavior in the specification to a scenario skeleton. Use during the SCENARIOS stage. Real ids and data are resolved later, in SCENARIO GROUND. Does not deploy or run scenarios."
 ---
 
 # Scenario Runner Authoring
