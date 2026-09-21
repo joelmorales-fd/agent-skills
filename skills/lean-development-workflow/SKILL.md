@@ -77,6 +77,28 @@ validating, correcting, and transitioning without asking the owner to push it
 forward. The only things that stop you after approval are a **genuine blocker** or
 **COMPLETE**. Never ask the owner to type "continue".
 
+**Start the watchdog once, when autonomy begins.** The moment the spec is approved
+and you begin running on your own, start the watchdog from the same `scripts/`
+directory this skill's `guard.py` lives in:
+
+```bash
+python3 <this-skill>/scripts/lead-watchdog.py \
+  --ticket <ticket-dir> --interval 180 --idle 540 --detach
+```
+
+`--detach` runs it in the background; confirm it started by reading
+`<ticket-dir>/.watchdog.pid`. A second launch is a no-op while one is running, and
+reusing a ticket directory is safe — a newer launch supersedes any older watchdog.
+
+The watchdog is an external clock, not a guard command and not an employee. It only
+reads `state.md`; when an active stage has been quiet longer than the idle window,
+it queues a short "validate and continue" message into your own session so you wake
+and take the next action. It never writes `state.md`, never decides a stage, and
+never ends the run — **only you end the process.** It finds your session on its own
+(no id needed) and exits by itself once the stage reaches COMPLETE or BLOCKED. Start
+exactly one per run, and set `--idle` above the longest time the run is legitimately
+quiet (a long harness build) so a working run is never nudged.
+
 ## Staying in sync
 
 You serialize everything, so the employees never drift out of step:
@@ -143,7 +165,9 @@ cannot control or monitor what you never looked at; a GREEN you didn't inspect i
 not evidence. **In particular, watch for a changed test expectation** — see TDD.
 
 **Stop only for:** spec approval (once), a genuine blocker (record the exact
-missing thing), or COMPLETE.
+missing thing), or COMPLETE. **Only you end the process** — no employee,
+sub-agent, or reused skill is ever allowed to stop or conclude the run; they
+return results to you, and you alone decide to continue or end.
 
 ## Stages in detail
 
