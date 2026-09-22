@@ -96,8 +96,7 @@ it queues a short "validate and continue" message into your own session so you w
 and take the next action. It never writes `state.md`, never decides a stage, and
 never ends the run — **only you end the process.** It finds your session on its own
 (no id needed) and exits by itself once the stage reaches COMPLETE or BLOCKED. Start
-exactly one per run, and set `--idle` above the longest time the run is legitimately
-quiet (a long harness build) so a working run is never nudged.
+exactly one per run.
 
 ## Staying in sync
 

@@ -174,16 +174,54 @@ def state_signature(state_path: Path) -> str:
         return ""
 
 
-def nudge(codex: str, thread: str, message: str) -> bool:
-    """Queue the wake message into the lead's session. Returns True on success.
-
-    `codex queue` enqueues a message for the thread and returns at once, so it does
-    not fight the interactive TUI's active writer the way `codex exec resume` does.
-    Waking works only when `thread` is the lead's own session (see CODEX_THREAD_ID).
+def detect_runtime(explicit: "str | None") -> str:
+    """Return 'codex' or 'claude'. An explicit choice wins; otherwise the session
+    environment variable decides, the same signal the declaration hooks use
+    (CLAUDE_CODE_SESSION_ID means Claude, CODEX_THREAD_ID means Codex). Defaults to
+    Codex when neither is set.
     """
+    if explicit and explicit != "auto":
+        return explicit
+    if os.environ.get("CLAUDE_CODE_SESSION_ID"):
+        return "claude"
+    if os.environ.get("CODEX_THREAD_ID"):
+        return "codex"
+    return "codex"
+
+
+def session_from_env(runtime: str) -> "str | None":
+    """The lead's own session id from the runtime's environment variable."""
+    var = "CLAUDE_CODE_SESSION_ID" if runtime == "claude" else "CODEX_THREAD_ID"
+    return os.environ.get(var) or None
+
+
+def nudge(runtime: str, cli: str, thread: str, message: str, log_path: Path) -> bool:
+    """Send the wake message to the lead's session for the given runtime.
+
+    Codex uses `codex queue`, which enqueues a message and returns at once, so it
+    does not fight the interactive window's writer. Claude has no queue equivalent,
+    so it uses `claude --resume <id> --print`, which resumes the session and runs a
+    full turn; that is launched detached so a long turn is not killed by a timeout.
+    The Claude path is not yet verified against a session held open in a window — it
+    may conflict or fork, and should be revisited after a runtime test. Waking works
+    only when `thread` is the lead's own session.
+    """
+    if runtime == "claude":
+        argv = [cli, "--resume", thread, "--print", message]
+        try:
+            handle = open(log_path, "a", buffering=1, encoding="utf-8")
+            try:
+                subprocess.Popen(argv, stdout=handle, stderr=subprocess.STDOUT,
+                                 stdin=subprocess.DEVNULL)
+            finally:
+                handle.close()  # the child keeps its own dup'd fd
+            return True
+        except (OSError, subprocess.SubprocessError) as exc:
+            log(f"nudge failed to launch: {exc}")
+            return False
     try:
         result = subprocess.run(
-            [codex, "queue", "--thread", thread, "--message", message],
+            [cli, "queue", "--thread", thread, "--message", message],
             capture_output=True,
             text=True,
             timeout=60,
@@ -247,19 +285,26 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Wake a stalled lead until COMPLETE/BLOCKED.")
     parser.add_argument("--ticket", required=True, help="Ticket directory containing state.md")
     parser.add_argument("--thread", default=None,
-                        help="Codex session UUID or exact name. Defaults to the "
-                             "CODEX_THREAD_ID environment variable (the lead's own "
-                             "session); branch discovery is only a last resort.")
+                        help="Session UUID or exact name. Defaults to the lead's own "
+                             "session from CLAUDE_CODE_SESSION_ID or CODEX_THREAD_ID; "
+                             "branch discovery is only a last resort (Codex only).")
+    parser.add_argument("--runtime", choices=["auto", "codex", "claude"], default="auto",
+                        help="Which agent runtime to wake. 'auto' detects it from the "
+                             "session environment variable (default).")
     parser.add_argument("--interval", type=int, default=180, help="Seconds between checks (default 180)")
     parser.add_argument("--idle", type=int, default=540,
                         help="Seconds of no progress before a nudge (default = 540)")
-    parser.add_argument("--message", default=DEFAULT_MESSAGE, help="Wake message to queue")
+    parser.add_argument("--message", default=DEFAULT_MESSAGE, help="Wake message to send")
     parser.add_argument("--codex", default="codex", help="Path to the codex CLI (default 'codex')")
+    parser.add_argument("--claude", default="claude", help="Path to the claude CLI (default 'claude')")
     parser.add_argument("--once", action="store_true", help="Run one check and exit (for testing)")
     parser.add_argument("--detach", action="store_true",
                         help="Run in the background as a daemon and record a pid file")
     args = parser.parse_args()
 
+    # Use the values the launch actually passed, so the log shows the real cadence and
+    # you can see whether the chosen --interval/--idle were used.
+    interval = args.interval
     idle = args.idle if args.idle is not None else args.interval
     ticket_dir = Path(args.ticket).expanduser().resolve()
     state_path = ticket_dir / "state.md"
@@ -277,19 +322,23 @@ def main() -> int:
     if args.detach:
         daemonize(ticket_dir / ".watchdog.log", pid_path)
 
-    # Prefer the lead's own session id (passed, or from its environment) over branch
-    # discovery, which can match a stale look-alike session on the same branch.
-    thread = args.thread or os.environ.get("CODEX_THREAD_ID") or None
+    # Detect the runtime (codex or claude) and take the lead's own session id from
+    # its environment variable, preferring that over branch discovery.
+    runtime = detect_runtime(args.runtime)
+    cli = args.claude if runtime == "claude" else args.codex
+    thread = args.thread or session_from_env(runtime)
     if thread:
-        thread_desc = f"{thread} (from {'--thread' if args.thread else 'CODEX_THREAD_ID'})"
+        env_var = "CLAUDE_CODE_SESSION_ID" if runtime == "claude" else "CODEX_THREAD_ID"
+        thread_desc = f"{thread} (from {'--thread' if args.thread else env_var})"
     else:
         thread_desc = "auto-discover"
     # Turn the idle budget into a count of unchanged checks (never a wall-clock read).
-    stall_limit = max(1, math.ceil(idle / args.interval))
+    stall_limit = max(1, math.ceil(idle / interval))
+    resume_log = ticket_dir / ".watchdog-resume.log"
     prev_sig = state_signature(state_path)
     stalls = 0
-    log(f"watching {state_path} (thread={thread_desc}, interval={args.interval}s, "
-        f"nudge after {stall_limit} unchanged check(s))")
+    log(f"watching {state_path} (runtime={runtime}, thread={thread_desc}, "
+        f"interval={interval}s, nudge after {stall_limit} unchanged check(s))")
 
     try:
         while True:
@@ -319,15 +368,19 @@ def main() -> int:
                 log("could not read a stage from state.md; will retry.")
             elif stalls >= stall_limit:
                 if thread is None:
-                    thread, why = discover_thread(ticket_dir)
-                    if thread is None:
-                        log(f"no session to nudge yet ({why}); will retry.")
+                    if runtime == "codex":
+                        thread, why = discover_thread(ticket_dir)
+                        if thread is None:
+                            log(f"no session to nudge yet ({why}); will retry.")
+                        else:
+                            log(f"discovered session {thread} via {why}.")
                     else:
-                        log(f"discovered session {thread} via {why}.")
+                        log("no session id for claude; set CLAUDE_CODE_SESSION_ID or "
+                            "--thread. Will retry.")
                 if thread is not None:
                     log(f"stage {stage}, unchanged for {stalls} check(s) >= {stall_limit} — nudging lead.")
-                    if nudge(args.codex, thread, args.message):
-                        log("nudge queued.")
+                    if nudge(runtime, cli, thread, args.message, resume_log):
+                        log("nudge sent.")
                         stalls = 0
             else:
                 log(f"stage {stage}, unchanged for {stalls}/{stall_limit} check(s) — no nudge.")
@@ -335,7 +388,7 @@ def main() -> int:
             if args.once:
                 return 0
             try:
-                time.sleep(args.interval)
+                time.sleep(interval)
             except KeyboardInterrupt:
                 log("interrupted; exiting.")
                 return 0
