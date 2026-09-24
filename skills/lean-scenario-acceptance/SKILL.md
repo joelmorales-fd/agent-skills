@@ -58,6 +58,26 @@ work, validating, correcting, and transitioning without asking the owner to move
 it forward. Stop only for a **genuine external execution blocker**. Never ask the
 owner to type "continue."
 
+**Start the watchdog once, when autonomy begins.** The moment you begin running
+on your own, start the watchdog from this skill's `scripts/` directory:
+
+```bash
+python3 <this-skill>/scripts/lead-watchdog.py \
+  --ticket <ticket-dir> --interval 180 --idle 540 --detach
+```
+
+`--detach` runs it in the background; confirm it started by reading
+`<ticket-dir>/.scenario-watchdog.pid`. A second launch is a no-op while one is running, and
+reusing a ticket directory is safe — a newer launch supersedes any older watchdog.
+
+The watchdog is an external clock, not a guard command and not an employee. It only
+reads `scenario-acceptance-state.md`; when an active stage has been quiet longer than the idle window,
+it queues a short "validate and continue" message into your own session so you wake
+and take the next action. It never writes `scenario-acceptance-state.md`, never decides a stage, and
+never ends the run — **only you end the process.** It finds your session on its own
+(no id needed) and exits by itself once the stage reaches DECISION or BLOCKED. Start
+exactly one per run.
+
 ## Staying in sync
 
 The Lead serializes state-changing work so employees do not drift out of sync:
