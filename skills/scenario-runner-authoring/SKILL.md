@@ -15,10 +15,14 @@ GROUND, after deploy.
 ## When to Use
 
 Use this in `lean-scenario-acceptance`'s SCENARIOS stage. Write the draft
-scenario under `scenarios/tickets/<TICKET-ID>/`, record the services and
-databases it needs, run schema validation on the draft (`schema_validate.py`
+scenario under `$HOME/src/docker-director2/scenarios/tickets/<TICKET-ID>/<scenario>.yaml`, record the services
+and databases it needs, run schema validation on the draft (`schema_validate.py`
 from `scenarios/`), report the result, and stop. The Lead checks the draft
 before DEPLOY.
+
+The scenario runner lives in the docker-director2 repository at
+`$HOME/src/docker-director2/scenarios`. Every `scenarios` path in this skill is
+relative to that repository.
 
 ## Read before writing
 
@@ -44,10 +48,13 @@ The draft is a scenario skeleton, not a runnable scenario:
    during SCENARIO GROUND.
 3. Placeholders where real ids and data will go. Do not invent ids or data
    here — SCENARIO GROUND resolves them against the deployed databases.
+4. The draft always will be a YAML file, never a document file like Markdown.
+5. Write the draft to `$HOME/src/docker-director2/scenarios/tickets/<TICKET-ID>/<scenario>.yaml`
+
 
 ## Return
 
-- the draft path under `scenarios/tickets/<TICKET-ID>/`;
+- the draft path under `$HOME/src/docker-director2/scenarios/tickets/<TICKET-ID>/<scenario>.yaml`;
 - the services and databases the scenario needs;
 - `RETURN TO SPECS` for one concrete behavior or API ambiguity, if any;
   otherwise none.

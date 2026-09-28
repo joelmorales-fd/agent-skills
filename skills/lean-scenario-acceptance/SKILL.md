@@ -1,6 +1,6 @@
 ---
 name: lean-scenario-acceptance
-description: Leads acceptance of one completed ticket by deploying it into the shared docker-director2 lower environment and running acceptance scenarios against it. Use after a lean-development-workflow ticket reaches COMPLETE, invoked manually against that ticket's directory, one ticket at a time.
+description: Leads acceptance of one completed ticket by deploying it into the shared lower environment and running acceptance scenarios against it. Use after a lean-development-workflow ticket reaches COMPLETE, invoked manually against that ticket's directory, one ticket at a time.
 ---
 
 # Lean Scenario Acceptance
@@ -21,12 +21,15 @@ reimplementing them. You *can* **use** them, and you are expected to:
 - **scenario draft** → **use the `scenario-runner-authoring` skill.**
   In SCENARIOS, the Engineer determines the services and databases and writes
   the first-draft scenario. Do not hand-author it as the Lead.
-- **scenario grounding** → **use the `scenario-runner-grounding` skill.**
+- **scenario grounding** → for director2-aws, **use the `scenario-runner-grounding` skill.**
+  For any other repositories, **use the `scenario-runner-grounding-generic` skill.**
   In SCENARIO GROUND, the Engineer resolves the draft against the deployed
   databases into the final scenario. Do not hand-author it as the Lead.
-- **deployment** → **use the `docker-director2-deploy` skill.**
+- **deployment** → for director2-aws, **use the `docker-director2-deploy` skill.**
   That skill writes `environments.env`, runs `local-up.sh`, and polls health.
   Do not run `local-up.sh` or Docker commands directly from this workflow.
+  For any other repo, deploy with the instructions in that repo's root `AGENTS.md`
+  (see DEPLOY).
 
 ## The organization
 
@@ -34,8 +37,8 @@ reimplementing them. You *can* **use** them, and you are expected to:
 |---|---|
 | **Owner** (the human) | Already approved loop 1's spec. Resolves genuine business/spec questions and blockers; does not drive routine stage transitions. |
 | **Lead** (you) | Manages the process: decides the next step, assigns bounded work, validates results, gathers real evidence through the delegated skills, writes `scenario-acceptance-state.md`, transitions stages, and keeps the owner informed. Never authors scenarios, deploys, or renders the QA verdict. **You are the final approver:** the owner approves the Loop 1 specification once; from there, you own the completion call. Deployment health, runner output, and the QA verdict are evidence to read, never a reported pass to accept on trust. If you cannot stand behind the evidence, the ticket is not PASS. |
-| **Engineer** (employee agent) | In SCENARIOS, investigates the frozen ticket package and the branch's code changes (its `git diff`), determines the services and databases the scenario needs, and drafts the scenario — without resolving ids or real data. In SCENARIO GROUND, connects to the deployed databases and turns that draft into the correct final scenario with real ids and data. Never deploys, renders the QA verdict, decides, or transitions. |
-| **SRE** (employee agent) | Builds the change's image. After a successful build, uses the `docker-director2-deploy` skill to configure and deploy the required services, then confirms their health. Does not author scenarios, run them, or decide the acceptance verdict. |
+| **Engineer** (employee agent) | If the repository is director2-aws: In SCENARIOS, investigates the frozen ticket package and the branch's code changes (its `git diff`), determines the services and databases the scenario needs, and drafts the scenario — without resolving ids or real data. In SCENARIO GROUND, connects to the deployed databases and turns that draft into the correct final scenario with real ids and data. Never deploys, renders the QA verdict, decides, or transitions. If the repository is not director2-aws: In SCENARIOS, investigates the frozen ticket package and the branch's code changes (its `git diff`) and drafts the scenario — without resolving ids or real data. In SCENARIO GROUND, connects to the databases the repository's root `AGENTS.md` says the deployment brings up and turns that draft into the correct final scenario with real ids and data. Never deploys, renders the QA verdict, decides, or transitions. |
+| **SRE** (employee agent) | Builds the change's image. After a successful build, if the repository is director2-aws, uses the `docker-director2-deploy` skill to configure and deploy the required services, then confirms their health. If the repository is not director2-aws, reads the repository's `AGENTS.md` to understand how to deploy. Does not author scenarios, run them, or decide the acceptance verdict. |
 | **QA lead** (employee agent) | An independent employee. In VALIDATE, runs the grounded scenario against the deployed environment, confirms it really checks what it should, and reads frozen `specification.md`, the scenario YAML, and the raw runner output directly — never the Engineer's or SRE's narrative. Writes `scenario-acceptance-code-review.md` with a PASS/FAIL and evidence; the Lead's hand never touches it, the same principle as loop 1's `code-review.md`. Never builds or grounds the scenario, fixes code, deploys, or transitions. |
 | **Senior Engineer** (employee agent) | Root-causes a scenario, build, environment, or product failure — reads the relevant sources, reproduces it, tests hypotheses, and returns the smallest evidence-backed path to continue — and can take on SCENARIO GROUND when it is hard. The Lead acts on the diagnosis; the Lead never debugs the failure or asks the owner to classify it. Never deploys, renders the QA verdict, decides, or transitions. |
 
@@ -150,7 +153,9 @@ evidence:
   branch's code changes the scenario is built from. In SCENARIO GROUND, also
   read the real ids and data it resolved against the deployed databases.
 - **SRE** — read the `build.log` file and the health output from the
-  deployment skill.
+  deployment skill. If the repository is not director2-aws, read the
+  `build.log` file and the health-check output from the instructions in the
+  repository's root `AGENTS.md`.
 - **QA lead** — read the runner's JUnit XML file, the `report.html` file, and
   the QA lead's independent verdict in `scenario-acceptance-code-review.md`.
 - **Senior Engineer** — read the reproduction steps and the complete chain of
@@ -176,8 +181,9 @@ databases the scenario needs, and writing a first-draft scenario. It is a
   `02-investigation.md`, `04-code-guide.md`, and the branch's real code changes 
   (its `git diff`). Those sources identify every database table, API/followup, cache,
   or queue the change touches; never assume that information from a description.
-- **Determine the services and databases the scenario needs.** This is the
-  critical output DEPLOY uses to bring up the lower environment: which services
+- **Determine the services and databases the scenario needs.** This apply just for
+  the Director2-aws repository. For other repositories, this will not apply or used at all.
+  This is the critical output DEPLOY uses to bring up the lower environment: which services
   must run the branch build (`--services`) and which databases must be local and
   writable (`DB_DEPLOY_TYPE`), derived from what each scenario step calls and
   asserts. The DEPLOY stage below has the confirmed request-to-service/database
@@ -187,13 +193,16 @@ databases the scenario needs, and writing a first-draft scenario. It is a
   `scenarios/DESIGN.md`, and `scenarios/README.md` (the Engineer reads all three
   before touching YAML). Search for the closest applicable scenario anywhere
   under `scenarios/`, including ticket scenarios, not only `scenarios/examples/`.
+  The draft always will be a YAML file, never a document file like Markdown.
 - **The ids and real data are not resolved here.** The draft names the shape of
   the data the scenario needs, not concrete ids — those are resolved after
   deploy, in SCENARIO GROUND, against the real databases. Do not invent ids or
   data to fill the draft.
 - This stage is complete when the services and databases are determined and a
   first-draft scenario exists, mapped to every Given/When/Then in
-  `specification.md`.
+  `specification.md`. If the repository is not director2-aws, this stage is
+  complete when a first-draft scenario exists, mapped to every Given/When/Then
+  in `specification.md`.
 - **When to return to SCENARIOS:** if a later stage shows the draft is missing a
   step the specification requires, or named the wrong services or databases, the
   Lead sends it back here. If the required behavior is unclear or needs to change,
@@ -202,9 +211,52 @@ databases the scenario needs, and writing a first-draft scenario. It is a
   `04-code-guide.md`, any `05-scope-changes.md` that exists, and the branch's
   code changes.
 
+
 ### DEPLOY
 
-During DEPLOY, the SRE builds the change and deploys it to the shared lower
+#### Repositories other than director2-aws
+
+For repositories other than director2-aws, follow the deployment instructions in the repository's root `AGENTS.md`.
+
+- Assign the **SRE**. The SRE reads the repository's root `AGENTS.md` and
+  follows its instructions to build the change, deploy it, and check its
+  health. The SRE does not invent steps the `AGENTS.md` does not give. If the
+  `AGENTS.md` has no deployment instructions, mark the ticket BLOCKED with that
+  exact gap.
+  - Run the build and deploy command the `AGENTS.md` gives, capturing its
+    output to a file so the raw text survives past this step:
+
+    ```
+    <build and deploy command from AGENTS.md> > build.log 2>&1
+    ```
+
+  - Run the health check the `AGENTS.md` gives, and keep its raw output for
+    the Lead.
+  - **Transient infra / interruption** (client disconnect, timeout) — **retry
+    freely; it does not burn the 5-cap.** It is not a "stable problem"; nothing
+    was learned and nothing was tried. If the same infra failure keeps
+    recurring, that's a diagnosis worth reporting (why the environment won't
+    hold), not a spent attempt budget.
+  - **JUDGE before writing BLOCKED (control-loop step 4):** open `build.log`
+    yourself and quote its actual tail in `scenario-acceptance-state.md`. A
+    description of the error ("the build failed because of X") is not
+    evidence and does not satisfy this step — only the file's own text does.
+    If you have not read `build.log`, you have not verified the failure.
+- The services and databases the scenario uses must be ones this
+  deployment brings up. If the scenario needs a service or database the
+  deployment does not provide, return to SCENARIOS; do not deploy an assumed
+  environment.
+- This stage is complete when the change is deployed and its health is
+  confirmed by the `AGENTS.md` health check.
+- Go back to SCENARIOS only if the deployment reveals that the scenario
+  assumed the wrong set of databases. Mark the ticket BLOCKED when a needed
+  capability is genuinely unavailable, such as the build failing. That is not
+  a reason to improvise around the `AGENTS.md` instructions.
+
+
+#### director2-aws Repository
+
+For Director2-aws repository, use the following steps. During DEPLOY, the SRE builds the change and deploys it to the shared lower
 environment using `docker-director2-deploy`. The SRE gives the Lead the
 deployment result and health checks.
 
@@ -318,7 +370,9 @@ Once the lower environment is up, one agent connects to the deployed databases, 
 the real ids, and fills them into the draft scenario — turning the first draft
 into a scenario that runs clean against real data.
 
-**Follow `scenario-runner-grounding`** — it is the process for resolving the
+If the repository is director2-aws, **follow `scenario-runner-grounding`**.
+If the repository is not director2-aws, **follow
+`scenario-runner-grounding-generic`**. Either one is the process for resolving the
 draft's placeholders against the deployed databases, finalizing the inserts,
 precondition, assertions, and teardown, running schema validation, then running
 the scenario against the deployed system until it passes. It is a
@@ -326,11 +380,14 @@ the scenario against the deployed system until it passes. It is a
 
 - Assign the **Engineer** (the **Senior Engineer** may take this when it is
   hard). The lower environment must be up and healthy from DEPLOY before this starts.
-- **Resolve the real ids and data against the deployed databases.** Query the
-  databases the scenario needs (the ones DEPLOY brought up locally and writable)
-  for real content that matches the shape the draft named. Use the database
-  rule: a direct DB read → `router`; `contentSearch` → `router,data1,data2`; a
-  publish or source-state assertion → `CIS`.
+- **Resolve the real ids and data against the deployed databases.** If the
+  repository is director2-aws, query the databases the scenario needs (the ones
+  DEPLOY brought up locally and writable) for real content that matches the shape
+  the draft named. Use the database rule: a direct DB read → `router`;
+  `contentSearch` → `router,data1,data2`; a publish or source-state assertion →
+  `CIS`. If the repository is not director2-aws, query the databases the
+  repository's root `AGENTS.md` says the deployment brings up, for real content
+  that matches the shape the draft named.
 - **Ground every id in real, complete content.** Trace what the change's code
   path requires of the content, then reuse the closest already-valid content and
   insert or update only what it still lacks to qualify. Build content from
@@ -446,8 +503,10 @@ an automatic trigger later, once this is proven standalone.
   assignment to a fresh employee; never do its work yourself.
 - When debugging is needed, assign the Senior Engineer. Do not debug the
   failure yourself.
-- Use `docker-director2-deploy` for deployment. Do not run `local-up.sh` or
-  Docker commands yourself.
+- Use `docker-director2-deploy` for deployment in director2-aws repository. 
+  Do not run `local-up.sh` or Docker commands yourself.
+  For repositories other than director2-aws, follow the deployment instructions in
+  the repository's root `AGENTS.md`. 
 - Never put a secret in a ticket file, prompt, or command argument.
 - Never record an employee's verdict without reading the artifact behind it —
   the evidence rule is non-negotiable.
@@ -461,7 +520,7 @@ an automatic trigger later, once this is proven standalone.
 - Before DEPLOY begins, the first-draft scenario and the services and databases
   determined in SCENARIOS are recorded in `scenario-acceptance-state.md`.
 - The DEPLOY record must include the health-check output from
-  `docker-director2-deploy`.
+  `docker-director2-deploy`, when deploying in the director2-aws repository.
 - Before VALIDATE begins, the real ids and data resolved in SCENARIO GROUND, and
   the clean run that proves the scenario passes end to end, are recorded in
   `scenario-acceptance-state.md`.
