@@ -35,7 +35,9 @@ the deployed environment.>
 write that updates Now / Last observed — never skip it, never rewrite
 earlier lines. One line per action, exactly:
 `YYYY-MM-DD HH:MM — STAGE — what happened` — time to the minute (no
-seconds). Name the artifact and real result the Lead judged — not merely the
+seconds).  Use the machine's local time, the same
+clock the watchdog log uses, and never write a time you did not observe.
+Name the artifact and real result the Lead judged — not merely the
 employee's PASS/FAIL label.>
 
 ## Decision
