@@ -1,6 +1,6 @@
 ---
 name: lean-non-functional-test
-description: Leads non-functional testing of one ticket that lean-development-workflow (Loop 1) has completed. It deploys the change, has the QA lead write a Test Plan from the changed code, has an independent Judge do a code review of that Test Plan, has the QA lead run it, and ends with the Lead's PASS or FAIL. It covers performance anti-pattern detection. Use after Loop 1 reaches COMPLETE, before or after lean-scenario-acceptance (Loop 2), invoked manually against that ticket's directory, one ticket at a time.
+description: Leads non-functional testing of one ticket that lean-development-workflow (Loop 1) has completed. It deploys the change, has the QA lead write a Test Plan from the changed code, has an independent Judge do a code review of that Test Plan, has the QA lead run it, and ends with the Lead's PASS or FAIL. It covers performance anti-pattern detection, and maintainability and readability. Use after Loop 1 reaches COMPLETE, before or after lean-scenario-acceptance (Loop 2), invoked manually against that ticket's directory, one ticket at a time.
 ---
 
 # Lean Non-functional Test
@@ -23,10 +23,10 @@ or any file that Loop 1 or Loop 2 wrote.
 
 ## What this skill tests
 
-This skill covers one kind of test: **performance anti-pattern detection**. It finds
-code in the change whose work grows badly as its input grows, by reading the code.
-Nothing has to run against the service to find it. Other kinds of test are not part of
-this skill.
+This skill covers two non-functional requirements, both found by reading the code:
+**performance anti-pattern detection**, code whose work grows badly as its input grows,
+and **maintainability and readability**, code the next person will find hard to read or
+change. Nothing has to run against the service to find them.
 
 ## You can call other skills — and you must
 
@@ -349,10 +349,12 @@ finds that makes the work grow badly with the input:
 - which input makes it grow, and where that input comes from, such as a request, the
   database, or a message;
 - how the work grows: once per item, or once per item for every item;
-- how large that input can really get, from the code or the specification;
+- how large that input can really get in normal use, from the data, the domain, or the
+  specification. A missing limit in the code does not make an input large;
 - its **severity**, with the reason:
   - **critical:** the work grows very fast, such as once per item for every item, or a
-    call inside a loop, and the input is large or has no limit;
+    separate call for every item, and the input is large in normal use. One query that
+    handles all the items at once is not a separate call for every item;
   - **high:** the work grows fast, and the input can get large in normal use;
   - **medium:** the work grows, but the input is usually small or has a limit;
   - **low:** the code is fine today, but would become a problem if the input grew.
@@ -363,9 +365,46 @@ not a finding. It is recorded as a note, with the reason.
 When there is no finding, the Test Plan says what the changed code does and why nothing
 in it grows with the input, with the file and line.
 
+#### Non-functional Requirements 2: maintainability and readability
+
+**What it reads:**
+
+- the current code of the changed files, and the whole file each change sits in;
+- two existing examples in the repository that do the same kind of job, to compare
+  against;
+- the repository's root `AGENTS.md`, and any conventions document it names.
+
+**What it looks for.** Check the change against every rule the repository's root
+`AGENTS.md` writes down, and record each rule the change touches as a finding or as a
+note with the reason it holds. Then use the `clean-code-guardian` skill's checks as the
+list of what else to look at. Two rules from this skill come first:
+
+- Every finding cites a rule the repository wrote down, or an existing example the
+  change departs from, with its file and line. A finding that cites neither is not a
+  finding. `clean-code-guardian` is the list of what to look at; it is never the
+  citation.
+- Its fixed sizes, such as 50 lines for a function, are signals to look closer, not
+  limits.
+
+Write findings in this skill's format and severity, not `clean-code-guardian`'s verdict.
+
+**What it writes for each finding:** the file and line, which check it is, what it
+cites, what the next person would get wrong, and its severity with the reason:
+
+- **critical:** the next change is likely to introduce a bug, such as the same rule in
+  two places, or a name that says the opposite of what the code does;
+- **high:** the code can only be understood after reading it several times;
+- **medium:** the code is understandable, but departs from how the codebase does the
+  same job;
+- **low:** cosmetic, and nothing follows from it.
+
+When there is no finding, the Test Plan says what the changed code does and which
+example it was compared against, with the file and line.
+
 **Lead check:** read `test-plan.md` yourself. Every finding has its file and line, its
-pattern, its input, how it grows, and its severity with the reason. A "no finding" has
-its reason. Only then move to CODE REVIEW.
+pattern, its input, how it grows, and its severity with the reason. Every maintainability
+finding has its file and line, its check, what it cites, and its severity with the
+reason. A "no finding" has its reason. Only then move to CODE REVIEW.
 
 ### CODE REVIEW
 
@@ -384,20 +423,26 @@ The Judge reads the changed code **itself**, not only the Test Plan, and checks:
 3. **Every severity is right.** It follows from how the work grows and how large the
    input can get.
 4. **Every note and "no finding" is true** against the code.
+5. **Maintainability: nothing is missed, and every finding cites** a written rule or an
+   existing example, at the file and line given. Every rule in the repository's root
+   `AGENTS.md` that the change touches is recorded as a finding or a note.
+6. **Maintainability: every severity is right.** It follows from what the next person
+   would get wrong, not from preference.
 
 The Judge writes `code-review.md` from `assets/templates/code-review.md`: one section
 per round, appended and never rewritten. Each section has its verdict, APPROVED or
 CHANGES NEEDED, and each problem found, with the file and line and what would fix it.
 On a repeat round, it lists each earlier problem and whether it is now fixed.
 
-**Exit:** APPROVED moves the run to RUN. CHANGES NEEDED sends the Test Plan back to the
-QA lead, which fixes exactly what the code review named. After each round, update the
-"Code review round" field in `state.md`. After 5 rounds on the same problem, go to
-BLOCKED. From RUN onward, the Test Plan does not change.
+**Exit:** first set the "Code review round" field in `state.md` to the number of the
+round just read, whether it was APPROVED or CHANGES NEEDED. Then APPROVED moves the run
+to RUN, and CHANGES NEEDED sends the Test Plan back to the QA lead, which fixes exactly
+what the code review named. After 5 rounds on the same problem, go to BLOCKED. From RUN
+onward, the Test Plan does not change.
 
 ### RUN
 
-Assign the **QA lead**. Performance anti-pattern detection has nothing to run against
+Assign the **QA lead**. Neither requirement has anything to run against
 the service: the approved findings are the result. The QA lead writes `verdict.md` from
 `assets/templates/verdict.md`, with every approved finding, its severity, and its file
 and line, or the approved "no finding" with its reason. It copies them from the approved
@@ -470,6 +515,8 @@ It is not chained automatically to Loop 1 or Loop 2.
   and how they were worked out before `docker-director2-deploy` was called, and the
   DEPLOY record includes its health-check output.
 - `code-review.md` has an APPROVED round before RUN started.
-- Every finding in `test-plan.md` and `verdict.md` has its file and line, its pattern,
-  its input, how it grows, and its severity with the reason.
+- Every performance finding in `test-plan.md` and `verdict.md` has its file and line,
+  its pattern, its input, how it grows, and its severity with the reason. Every
+  maintainability finding has its file and line, its check, what it cites, and its
+  severity with the reason.
 - `state.md` records PASS or FAIL with the reason, naming the findings it rests on.

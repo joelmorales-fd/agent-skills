@@ -37,12 +37,39 @@ a finding. If there are none, write only "None." and nothing else.>
 <Only when there are no findings: what the changed code does, and why nothing in it
 grows with the input, with the file and line.>
 
-## 3. Test cases
+## 3. Maintainability and readability
 
-None. Performance anti-pattern detection is found by reading the code, so nothing runs
-against the service.
+### Findings
 
-## 4. Where it runs
+<Empty if there are none. One block per finding:>
+
+#### Finding <n>: <short name>
+
+- **File and line:** `<path>:<line>`
+- **Check:** <which `clean-code-guardian` check>
+- **Cites:** <the repository's written rule, or the existing example it departs from,
+  with its file and line>
+- **What the next person would get wrong:** <the consequence>
+- **Severity:** <critical | high | medium | low>
+- **Why this severity:** <from the consequence, not from preference>
+
+### Notes
+
+<Each rule in the repository's root `AGENTS.md` that the change touches but does not
+break, with the rule's file and line and the reason it holds. If there are none, write
+only "None." and nothing else.>
+
+### No finding
+
+<Only when there are no findings: what the changed code does, and which example it was
+compared against, with the file and line.>
+
+## 4. Test cases
+
+None. Both requirements are found by reading the code, so nothing runs against the
+service.
+
+## 5. Where it runs
 
 <The address of the deployed service, from the repository's `AGENTS.md` or from the
 deployment, and where that came from.>

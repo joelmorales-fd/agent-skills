@@ -21,6 +21,17 @@ reads it and makes the decision.>
 <Or, when there are no findings: "No finding", with the reason from the approved Test
 Plan.>
 
+### Maintainability and readability
+
+<Copied from the approved `test-plan.md`, never changed. One row per finding.>
+
+| # | File and line | Check | Cites | Severity |
+|---|---|---|---|---|
+| <n> | `<path>:<line>` | <check> | <rule or example, with file and line> | <severity> |
+
+<Or, when there are no findings: "No finding", with the reason from the approved Test
+Plan.>
+
 ### Comments
 
 <The QA lead's comments for the Lead: what the findings mean for the change, and

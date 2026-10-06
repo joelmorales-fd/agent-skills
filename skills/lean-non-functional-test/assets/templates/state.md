@@ -27,7 +27,8 @@ output.>
 ## History
 <Append-only, newest last. One line per action, in the same write that updates Now and
 Last observed:
-`YYYY-MM-DD HH:MM — STAGE — what happened`. Use the machine's local time, the same
+`YYYY-MM-DD HH:MM — STAGE — what happened`. STAGE is the stage the action happened in,
+not the stage the run moves to next. Use the machine's local time, the same
 clock the watchdog log uses, and never write a time you did not observe. Name the file
 the Lead read and what it showed, not an employee's label.>
 

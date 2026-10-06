@@ -18,6 +18,8 @@ the Judge.>
 - **Every finding is true:** <yes, or which finding is wrong and why>
 - **Every severity is right:** <yes, or which severity is wrong and why>
 - **Every note and "no finding" is true:** <yes, or which one is wrong and why>
+- **Maintainability: nothing is missed, and every finding cites a written rule or an existing example:** <yes, or what is missing, including any `AGENTS.md` rule the change touches that is not recorded, or which finding cites neither>
+- **Maintainability: every severity is right:** <yes, or which severity is wrong and why>
 
 ### Problems
 
